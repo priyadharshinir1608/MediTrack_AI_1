@@ -1,0 +1,16 @@
+[
+  {
+    "id": "act_001",
+    "action": "MEDICINE_ADDED",
+    "details": "Added Paracetamol 500mg via AI OCR Scan",
+    "userId": "dev_user_demo",
+    "timestamp": "2026-08-02T13:45:00.000Z"
+  },
+  {
+    "id": "act_002",
+    "action": "STOCK_ADJUSTED",
+    "details": "Replenished Amoxicillin 250mg (+50 units)",
+    "userId": "dev_user_demo",
+    "timestamp": "2026-08-02T14:10:00.000Z"
+  }
+]

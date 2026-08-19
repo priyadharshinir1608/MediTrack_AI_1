@@ -1,0 +1,44 @@
+# Node dependencies
+node_modules/
+**/node_modules/
+npm-debug.log
+yarn-error.log
+
+# Python dependencies & cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# Environment variables & secrets
+.env
+**/.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+serviceAccountKey.json
+**/serviceAccountKey.json
+
+# Builds & Outputs
+dist/
+**/dist/
+build/
+**/build/
+uploads/medicines/*
+!uploads/medicines/.gitkeep
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Models & binaries
+*.pkl
+*.h5
+*.onnx

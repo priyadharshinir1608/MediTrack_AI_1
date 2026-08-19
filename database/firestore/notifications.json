@@ -1,0 +1,20 @@
+[
+  {
+    "id": "notif_001",
+    "title": "Low Stock Warning",
+    "message": "Amoxicillin 250mg is below safety threshold (8 units left).",
+    "type": "warning",
+    "medicineId": "65b1c9f2e34a120098a1",
+    "isRead": false,
+    "timestamp": "2026-08-02T12:00:00.000Z"
+  },
+  {
+    "id": "notif_002",
+    "title": "Expiry Alert",
+    "message": "Cough Syrup 100ml expires in 28 days.",
+    "type": "danger",
+    "medicineId": "65b1c9f2e34a120098a2",
+    "isRead": false,
+    "timestamp": "2026-08-02T09:30:00.000Z"
+  }
+]
