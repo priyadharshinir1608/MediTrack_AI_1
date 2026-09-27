@@ -5,6 +5,7 @@ import {
   Pill, 
   PlusCircle, 
   Boxes, 
+  Receipt,
   BarChart3, 
   Bell, 
   User, 
@@ -45,6 +46,11 @@ const Sidebar = ({ collapsed }) => {
         <NavLink to="/stock" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <Boxes size={20} />
           {!collapsed && <span>Stock & Alerts</span>}
+        </NavLink>
+
+        <NavLink to="/billing" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+          <Receipt size={20} />
+          {!collapsed && <span>Billing & POS</span>}
         </NavLink>
 
         <NavLink to="/reports" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>

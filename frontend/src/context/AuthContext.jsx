@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await registerUser(name, email, password, role);
-      setUser(data.user);
+      setUser(null);
       return data;
     } finally {
       setLoading(false);

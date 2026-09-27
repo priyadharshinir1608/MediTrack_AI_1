@@ -47,8 +47,8 @@ export const getStockBadge = (quantity, minThreshold = 10) => {
   if (quantity <= 0) {
     return { label: 'Out of Stock', class: 'badge-danger' };
   } else if (quantity <= minThreshold) {
-    return { label: `Low (${quantity})`, class: 'badge-warning' };
+    return { label: 'Low Stock', class: 'badge-warning' };
   } else {
-    return { label: `In Stock (${quantity})`, class: 'badge-success' };
+    return { label: 'In Stock', class: 'badge-success' };
   }
 };

@@ -15,14 +15,18 @@ def preprocess_image(image_bytes_or_path):
     if img is None:
         raise ValueError("Could not decode image")
 
-    # 1. Convert to Grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # 1. Resize large images to optimal OCR resolution (max 1280px)
+    h, w = img.shape[:2]
+    max_dim = 1280
+    if max(h, w) > max_dim:
+        scale = max_dim / float(max(h, w))
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
 
-    # 2. Denoising & Contrast Adjustment
-    denoised = cv2.fastNlMeansDenoising(gray, h=10)
+    # 2. Convert to Grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # 3. CLAHE (Contrast Limited Adaptive Histogram Equalization)
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(denoised)
+    enhanced = clahe.apply(gray)
 
     return img, enhanced

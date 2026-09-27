@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, Mail, Lock, ArrowRight } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { Sparkles, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || '');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setLoading(true);
 
     try {
@@ -31,6 +34,7 @@ const Login = () => {
   const handleGoogleLogin = async () => {
     try {
       setError('');
+      setSuccessMsg('');
       setLoading(true);
       await loginWithGoogle();
       navigate('/dashboard');
@@ -74,6 +78,24 @@ const Login = () => {
             Sign in to MedScan AI Pharmacy Console
           </p>
         </div>
+
+        {successMsg && (
+          <div style={{
+            padding: '0.75rem 1rem',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(34, 197, 94, 0.15)',
+            border: '1px solid rgba(34, 197, 94, 0.3)',
+            color: '#22c55e',
+            fontSize: '0.85rem',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <CheckCircle2 size={16} />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         {error && (
           <div style={{

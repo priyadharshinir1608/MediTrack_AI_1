@@ -2,9 +2,10 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getAnalytics } from "firebase/analytics";
+import { getMessaging, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "YOUR_API_KEY",
+  apiKey: "AIzaSyDHM4xffvC5UaIMqmjr95UXksUs5aL5WG8",
   authDomain: "meditrack-ai-69dee.firebaseapp.com",
   projectId: "meditrack-ai-69dee",
   storageBucket: "meditrack-ai-69dee.firebasestorage.app",
@@ -19,10 +20,20 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
-// Analytics should only initialize when a real web API key is configured.
+// Safe Messaging Initialization (Checks browser compatibility + Service Worker availability)
+const messaging = isSupported().then((supported) => {
+  return supported && typeof window !== "undefined" ? getMessaging(app) : null;
+}).catch(() => null);
+
+// Analytics initialization for browser environment
 let analytics;
-if (typeof window !== "undefined" && firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
-  analytics = getAnalytics(app);
+if (typeof window !== "undefined") {
+  try {
+    analytics = getAnalytics(app);
+  } catch (err) {
+    console.warn("[Firebase Analytics] Warning:", err.message);
+  }
 }
 
-export { app, auth, db, analytics, googleProvider };
+export { app, auth, db, analytics, googleProvider, messaging, firebaseConfig };
+export default app;

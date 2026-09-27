@@ -33,11 +33,12 @@ export const registerUser = async (name, email, password, role = 'pharmacist') =
     try {
       const res = await createUserWithEmailAndPassword(auth, email, password);
       firebaseUid = res.user.uid;
+      // Sign out from client immediately so the user must log in explicitly on Login page
+      await firebaseSignOut(auth);
       localStorage.removeItem('medscan_dev_token');
     } catch (fbErr) {
       console.warn('[Firebase Auth] Notice:', fbErr.message, '- Using dev fallback user registration');
       firebaseUid = 'dev_user_' + Date.now();
-      localStorage.setItem('medscan_dev_token', `mock_token_${firebaseUid}`);
     }
 
     // Register user metadata in MongoDB

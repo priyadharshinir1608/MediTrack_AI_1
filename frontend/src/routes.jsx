@@ -9,8 +9,10 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AddMedicine from './pages/AddMedicine';
 import MedicineList from './pages/MedicineList';
+import MedicineDetail from './pages/MedicineDetail';
 import UpdateMedicine from './pages/UpdateMedicine';
 import StockManagement from './pages/StockManagement';
+import Billing from './pages/Billing';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
@@ -42,9 +44,11 @@ const AppRoutes = () => {
       <Route path="/" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/medicines" element={<ProtectedRoute><MedicineList /></ProtectedRoute>} />
+      <Route path="/medicines/:id" element={<ProtectedRoute><MedicineDetail /></ProtectedRoute>} />
       <Route path="/add-medicine" element={<ProtectedRoute><AddMedicine /></ProtectedRoute>} />
       <Route path="/medicines/edit/:id" element={<ProtectedRoute><UpdateMedicine /></ProtectedRoute>} />
       <Route path="/stock" element={<ProtectedRoute><StockManagement /></ProtectedRoute>} />
+      <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

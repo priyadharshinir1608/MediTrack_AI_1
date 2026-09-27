@@ -10,21 +10,15 @@ const scanMedicineImage = async (filePath) => {
 
     const response = await axios.post(`${env.aiServiceUrl}/ocr`, formData, {
       headers: formData.getHeaders(),
-      timeout: 15000
+      timeout: 60000
     });
 
     return response.data;
   } catch (error) {
-    console.warn('[OCR Service] Flask microservice call fallback:', error.message);
+    console.warn('[OCR Service] AI microservice notice:', error.message);
     return {
       success: false,
-      data: {
-        name: 'Paracetamol 500mg (AI Extracted)',
-        batchNumber: 'B-98745',
-        expiryDate: '2026-12-31',
-        manufacturer: 'MedLab Pharma',
-        category: 'Tablet'
-      }
+      message: 'AI OCR service processing timed out or encountered an issue. Please enter specifications manually.'
     };
   }
 };

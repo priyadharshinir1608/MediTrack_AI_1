@@ -8,13 +8,15 @@ def detect_barcode(cv_image):
     """
     barcode_data = []
     try:
-        # OpenCV built-in barcode detector (OpenCV 4.7+)
+        # OpenCV built-in barcode detector
         detector = cv2.barcode.BarcodeDetector()
-        ok, decoded_info, decoded_type, _ = detector.detectAndDecode(cv_image)
-        if ok and decoded_info:
-            for info in decoded_info:
-                if info:
-                    barcode_data.append(info)
+        res = detector.detectAndDecode(cv_image)
+        if isinstance(res, (tuple, list)) and len(res) >= 2:
+            ok, decoded_info = res[0], res[1]
+            if ok and decoded_info:
+                for info in decoded_info:
+                    if info:
+                        barcode_data.append(info)
     except Exception as e:
         print(f"[Barcode Detector] OpenCV Detector notice: {e}")
 

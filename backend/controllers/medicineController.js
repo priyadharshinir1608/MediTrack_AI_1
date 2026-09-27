@@ -115,11 +115,56 @@ const uploadMedicineImage = async (req, res, next) => {
   }
 };
 
+const { lookupBarcode } = require('../services/barcodeService');
+
+const lookupMedicineBarcode = async (req, res, next) => {
+  try {
+    const { code } = req.params;
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Barcode is required' });
+    }
+
+    // 1. Check existing MongoDB inventory
+    const existingMed = await Medicine.findOne({ barcode: code });
+    if (existingMed) {
+      return res.status(200).json({
+        success: true,
+        found: true,
+        source: 'inventory',
+        medicine: {
+          name: existingMed.name,
+          genericName: existingMed.genericName,
+          category: existingMed.category,
+          batchNumber: existingMed.batchNumber,
+          quantity: existingMed.quantity,
+          price: existingMed.price,
+          costPrice: existingMed.costPrice,
+          expiryDate: existingMed.expiryDate ? new Date(existingMed.expiryDate).toISOString().split('T')[0] : '',
+          manufacturer: existingMed.manufacturer,
+          barcode: existingMed.barcode
+        }
+      });
+    }
+
+    // 2. Check pharmaceutical catalog & GS1 parser
+    const catalogData = lookupBarcode(code);
+    return res.status(200).json({
+      success: true,
+      found: catalogData?.found || false,
+      source: catalogData?.source || 'none',
+      medicine: catalogData || { barcode: code }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getMedicines,
   getMedicineById,
   addMedicine,
   updateMedicine,
   deleteMedicine,
-  uploadMedicineImage
+  uploadMedicineImage,
+  lookupMedicineBarcode
 };

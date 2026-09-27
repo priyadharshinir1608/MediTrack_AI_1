@@ -38,10 +38,15 @@ const verifyToken = async (req, res, next) => {
 
     req.firebaseUser = decodedToken;
 
-    // Attach MongoDB user if available
-    let dbUser = await User.findOne({ firebaseUid: decodedToken.uid });
-    if (!dbUser && decodedToken.email) {
-      dbUser = await User.findOne({ email: decodedToken.email });
+    // Attach MongoDB user if available (safe lookup decoupled from token verification)
+    let dbUser = null;
+    try {
+      dbUser = await User.findOne({ firebaseUid: decodedToken.uid });
+      if (!dbUser && decodedToken.email) {
+        dbUser = await User.findOne({ email: decodedToken.email });
+      }
+    } catch (dbErr) {
+      console.warn('[Auth Middleware] MongoDB profile lookup warning:', dbErr.message);
     }
 
     req.user = dbUser || {

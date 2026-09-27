@@ -4,6 +4,7 @@ from ocr.ocr import process_medicine_image
 from ml.low_stock_prediction import predict_low_stock
 from ml.expiry_prediction import predict_expiry_risk
 from ml.demand_prediction import predict_demand
+from ml.sales_analytics import analyze_daily_sales
 
 app = Flask(__name__)
 CORS(app)
@@ -73,6 +74,14 @@ def handle_demand():
 
     result = predict_demand(history)
     return jsonify({"success": True, "prediction": result})
+
+@app.route('/ml/sales-analytics', methods=['POST'])
+def handle_sales_analytics():
+    data = request.json or {}
+    history = data.get('dailySalesHistory', [])
+
+    result = analyze_daily_sales(history)
+    return jsonify({"success": True, "analytics": result})
 
 if __name__ == '__main__':
     print("==================================================")

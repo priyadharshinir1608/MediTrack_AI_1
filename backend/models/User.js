@@ -31,6 +31,37 @@ const userSchema = new mongoose.Schema(
     phone: {
       type: String,
       default: ''
+    },
+    contactNumber: {
+      type: String,
+      default: ''
+    },
+    // User-Controlled Gmail + WhatsApp Alert Settings
+    alertSettings: {
+      email: {
+        type: Boolean,
+        default: true
+      },
+      whatsapp: {
+        type: Boolean,
+        default: true
+      },
+      expiry: {
+        enabled: { type: Boolean, default: true },
+        days: { type: [Number], default: [30, 10, 5, 1] }
+      },
+      lowStock: {
+        enabled: { type: Boolean, default: true },
+        threshold: { type: Number, default: 10 }
+      },
+      dailyAlertTime: {
+        type: String,
+        default: '08:00' // Format: HH:MM (24-hour)
+      },
+      timezone: {
+        type: String,
+        default: 'Asia/Kolkata'
+      }
     }
   },
   {

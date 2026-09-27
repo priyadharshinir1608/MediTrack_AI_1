@@ -9,7 +9,6 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('pharmacist');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,8 +18,13 @@ const Register = () => {
     setLoading(true);
 
     try {
-      await register(name, email, password, role);
-      navigate('/dashboard');
+      await register(name, email, password, 'pharmacist');
+      navigate('/login', {
+        state: {
+          successMessage: 'Account registered successfully! Please sign in with your credentials.',
+          registeredEmail: email
+        }
+      });
     } catch (err) {
       setError(err.message || 'Registration failed.');
     } finally {
@@ -121,19 +125,6 @@ const Register = () => {
                 minLength={6}
               />
             </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Role</label>
-            <select
-              className="form-select"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option value="pharmacist">Pharmacist</option>
-              <option value="admin">Administrator</option>
-              <option value="staff">Pharmacy Staff</option>
-            </select>
           </div>
 
           <button

@@ -30,7 +30,9 @@ dist/
 build/
 **/build/
 uploads/medicines/*
-!uploads/medicines/.gitkeep
+backend/uploads/medicines/*
+**/uploads/medicines/*
+!**/uploads/medicines/.gitkeep
 
 # IDE & OS
 .vscode/

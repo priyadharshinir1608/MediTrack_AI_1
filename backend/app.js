@@ -13,6 +13,7 @@ const stockRoutes = require('./routes/stockRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const reportRoutes = require('./routes/reportRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const billingRoutes = require('./routes/billingRoutes');
 
 const app = express();
 
@@ -58,6 +59,8 @@ app.use('/api/stock', stockRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/sales', billingRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
