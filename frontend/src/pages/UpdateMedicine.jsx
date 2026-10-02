@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Pill, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 import Loading from '../components/Loading';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const UpdateMedicine = () => {
   const { id } = useParams();
@@ -115,7 +117,13 @@ const UpdateMedicine = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem' }}>
+      <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem', position: 'relative', overflow: 'hidden' }}>
+        <FormLoadingOverlay 
+          active={saving} 
+          title="Updating Medicine Record" 
+          subtitle="Synchronizing inventory modifications with MongoDB..." 
+          badge="Stock Registry" 
+        />
         
         {/* Brand Name */}
         <div className="form-group">
@@ -244,7 +252,7 @@ const UpdateMedicine = () => {
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={saving} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '150px', justifyContent: 'center' }}>
-            {saving ? <div className="spinner" /> : <><Save size={18} /> Update Record</>}
+            {saving ? <ButtonLoader text="Updating Record..." /> : <><Save size={18} /> Update Record</>}
           </button>
         </div>
 

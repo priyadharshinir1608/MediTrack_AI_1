@@ -50,32 +50,40 @@ const Dashboard = () => {
   const [expiringMeds, setExpiringMeds] = useState([]);
   
   const [stats, setStats] = useState({
-    totalMedicines: 22,
-    totalStockUnits: 1434,
-    lowStockCount: 4,
-    expiringCount: 4,
-    totalValuation: 147891,
-    monthlyRevenue: 148500
+    totalMedicines: 0,
+    totalStockUnits: 0,
+    lowStockCount: 0,
+    expiringCount: 0,
+    totalValuation: 0,
+    monthlyRevenue: 0
   });
 
   const [analyticsData, setAnalyticsData] = useState({
     dailySales: {
-      labels: ['25 Aug', '26 Aug', '27 Aug', '28 Aug', '29 Aug', '30 Aug', '31 Aug'],
-      revenues: [4415, 6327, 3512, 1921, 614, 3845, 3619],
-      forecastNext3Days: [4100, 4350, 4600]
+      labels: [],
+      forecastDates: [],
+      revenues: [],
+      forecastNext3Days: []
     },
     medicineDistribution: {
-      labels: ['Paracetamol 500mg', 'Pan-D Capsule', 'Allegra 120mg', 'Lantus SoloStar', 'Azithral 500mg', 'Others'],
-      quantities: [24, 18, 13, 13, 12, 58],
-      totalUnitsSold: 138
+      labels: [],
+      quantities: [],
+      totalUnitsSold: 0
+    },
+    monthlyStockManagement: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+      newStockAdded: [],
+      lowStockRisk: [],
+      replenishedStock: [],
+      predictedNextMonthProcurement: 0
     },
     insights: {
-      totalRevenue: 24255,
-      averageDailyRevenue: 3465,
-      growthRatePercent: 12.4,
-      salesVelocityTrend: 'UPWARD',
-      peakDay: '26 Aug',
-      peakRevenue: 6327,
+      totalRevenue: 0,
+      averageDailyRevenue: 0,
+      growthRatePercent: 0,
+      salesVelocityTrend: 'STABLE',
+      peakDay: '',
+      peakRevenue: 0,
       engine: 'Python Scikit-Learn & NumPy ML Pipeline'
     }
   });
@@ -129,20 +137,26 @@ const Dashboard = () => {
         setExpiringMeds(expMeds);
       }
 
+      let liveRevenue = 0;
       if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.data?.analytics) {
         setAnalyticsData(analyticsRes.value.data.analytics);
+        liveRevenue = Number(analyticsRes.value.data.analytics?.insights?.totalRevenue) || 0;
       }
 
       const totalUnits = allMeds.reduce((acc, m) => acc + (Number(m.quantity) || 0), 0);
       const totalValue = allMeds.reduce((acc, m) => acc + ((Number(m.quantity) || 0) * (Number(m.price) || 0)), 0);
 
+      // Deduplicate medicines strictly by name for authentic catalog count
+      const uniqueNames = new Set(allMeds.map(m => (m.name || '').trim().toLowerCase()).filter(Boolean));
+      const deduplicatedMedCount = uniqueNames.size || allMeds.length;
+
       setStats({
-        totalMedicines: allMeds.length > 0 ? allMeds.length : 22,
-        totalStockUnits: totalUnits > 0 ? totalUnits : 1434,
-        lowStockCount: lowMeds.length > 0 ? lowMeds.length : 4,
-        expiringCount: expMeds.length > 0 ? expMeds.length : 4,
-        totalValuation: totalValue > 0 ? totalValue : 147891,
-        monthlyRevenue: 148500
+        totalMedicines: deduplicatedMedCount,
+        totalStockUnits: totalUnits,
+        lowStockCount: lowMeds.length,
+        expiringCount: expMeds.length,
+        totalValuation: totalValue,
+        monthlyRevenue: liveRevenue
       });
     } catch (err) {
       console.warn('Dashboard live data fallback active');
@@ -173,15 +187,18 @@ const Dashboard = () => {
 
   // 1. Day-by-Day Sales Monitor (Line Chart) with Python ML Forecast
   const dayByDaySalesLineData = useMemo(() => {
-    const rawLabels = analyticsData?.dailySales?.labels || ['25 Aug', '26 Aug', '27 Aug', '28 Aug', '29 Aug', '30 Aug', '31 Aug'];
-    const rawRevs = analyticsData?.dailySales?.revenues || [4415, 6327, 3512, 1921, 614, 3845, 3619];
-    const forecast = analyticsData?.dailySales?.forecastNext3Days || [4100, 4350, 4600];
+    const rawLabels = analyticsData?.dailySales?.labels || [];
+    const rawRevs = analyticsData?.dailySales?.revenues || [];
+    const forecast = analyticsData?.dailySales?.forecastNext3Days || [];
+    const forecastLabels = analyticsData?.dailySales?.forecastDates || ['+1d Est', '+2d Est', '+3d Est'];
 
-    const historicalPadded = [...rawRevs, null, null, null];
-    const forecastPadded = [...rawRevs.slice(0, -1).map(() => null), rawRevs[rawRevs.length - 1], ...forecast];
+    const historicalPadded = [...rawRevs, ...forecastLabels.map(() => null)];
+    const forecastPadded = rawRevs.length > 0
+      ? [...rawRevs.slice(0, -1).map(() => null), rawRevs[rawRevs.length - 1], ...forecast]
+      : forecast;
 
     return {
-      labels: [...rawLabels, '+1d Est', '+2d Est', '+3d Est'],
+      labels: [...rawLabels, ...forecastLabels],
       datasets: [
         {
           label: 'Day-by-Day Sales (₹)',
@@ -213,8 +230,8 @@ const Dashboard = () => {
 
   // 2. Day-by-Day Medicines Sales Monitor (Pie Chart)
   const medicineSalesPieData = useMemo(() => {
-    const labels = analyticsData?.medicineDistribution?.labels || ['Paracetamol 500mg', 'Pan-D Capsule', 'Allegra 120mg', 'Lantus SoloStar', 'Azithral 500mg', 'Others'];
-    const quantities = analyticsData?.medicineDistribution?.quantities || [24, 18, 13, 13, 12, 58];
+    const labels = analyticsData?.medicineDistribution?.labels || [];
+    const quantities = analyticsData?.medicineDistribution?.quantities || [];
 
     return {
       labels,
@@ -227,7 +244,9 @@ const Dashboard = () => {
             'rgba(16, 185, 129, 0.85)',
             'rgba(245, 158, 11, 0.85)',
             'rgba(239, 68, 68, 0.85)',
-            'rgba(14, 165, 233, 0.85)'
+            'rgba(14, 165, 233, 0.85)',
+            'rgba(236, 72, 153, 0.85)',
+            'rgba(99, 102, 241, 0.85)'
           ],
           borderColor: 'rgba(255, 255, 255, 0.12)',
           borderWidth: 1
@@ -239,10 +258,11 @@ const Dashboard = () => {
   // 3. Monthly New & Low Stock Monitor (Bar Chart) powered by Python ML
   const monthlyStockBarData = useMemo(() => {
     const stockInfo = analyticsData?.monthlyStockManagement || {};
-    const labels = stockInfo.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug'];
-    const newStock = stockInfo.newStockAdded || [420, 560, 680, 850, 790, 940, 1120, 1434];
-    const lowStockRisk = stockInfo.lowStockRisk || [95, 110, 80, 130, 105, 140, 160, 195];
-    const replenished = stockInfo.replenishedStock || [380, 500, 620, 780, 720, 880, 1020, 1310];
+    const ALL_12_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const labels = (stockInfo.labels && stockInfo.labels.length === 12) ? stockInfo.labels : ALL_12_MONTHS;
+    const newStock = stockInfo.newStockAdded || [];
+    const lowStockRisk = stockInfo.lowStockRisk || [];
+    const replenished = stockInfo.replenishedStock || [];
 
     return {
       labels,
@@ -454,7 +474,7 @@ const Dashboard = () => {
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Sold medicine volume share from history</p>
                 </div>
                 <span className="badge badge-info" style={{ fontSize: '0.75rem' }}>
-                  {analyticsData?.medicineDistribution?.totalUnitsSold || 138} Sold
+                  {analyticsData?.medicineDistribution?.totalUnitsSold || 0} Units
                 </span>
               </div>
               <div style={{ height: '240px', width: '100%', position: 'relative', display: 'flex', justifyContent: 'center' }}>
@@ -481,7 +501,7 @@ const Dashboard = () => {
                   <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Procurement intake vs low-stock replenishment</p>
                 </div>
                 <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>
-                  +{analyticsData?.monthlyStockManagement?.predictedNextMonthProcurement || 1418} Est Next Mo.
+                  +{analyticsData?.monthlyStockManagement?.predictedNextMonthProcurement || 0} Est Next Mo.
                 </span>
               </div>
               <div style={{ height: '240px', width: '100%', position: 'relative' }}>

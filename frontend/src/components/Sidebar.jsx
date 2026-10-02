@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Pill, 
@@ -9,7 +9,6 @@ import {
   BarChart3, 
   Bell, 
   User, 
-  Settings, 
   Sparkles,
   LogOut
 } from 'lucide-react';
@@ -20,12 +19,14 @@ const Sidebar = ({ collapsed }) => {
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <Sparkles size={20} />
+      <Link to="/dashboard" style={{ textDecoration: 'none', color: 'inherit' }} title="MediTrack AI Dashboard">
+        <div className="sidebar-header" style={{ cursor: 'pointer' }}>
+          <div className="sidebar-logo">
+            <Sparkles size={20} />
+          </div>
+          {!collapsed && <span className="sidebar-title">MediTrack AI</span>}
         </div>
-        {!collapsed && <span className="sidebar-title">MedScan AI</span>}
-      </div>
+      </Link>
 
       <nav className="sidebar-nav">
         <NavLink to="/dashboard" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -66,11 +67,6 @@ const Sidebar = ({ collapsed }) => {
         <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
           <User size={20} />
           {!collapsed && <span>Profile</span>}
-        </NavLink>
-
-        <NavLink to="/settings" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          <Settings size={20} />
-          {!collapsed && <span>Settings</span>}
         </NavLink>
       </nav>
 

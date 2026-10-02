@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Sparkles, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -57,7 +59,13 @@ const Login = () => {
       background: 'radial-gradient(circle at top right, rgba(59, 130, 246, 0.15), transparent 40%), var(--bg-primary)',
       padding: '1.5rem'
     }}>
-      <div className="glass-card fade-in" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem 2rem' }}>
+      <div className="glass-card fade-in" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem 2rem', position: 'relative', overflow: 'hidden' }}>
+        <FormLoadingOverlay 
+          active={loading} 
+          title="Authenticating Pharmacist" 
+          subtitle="Verifying credentials and opening secure session..." 
+          badge="Security Gateway" 
+        />
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
             width: '48px',
@@ -150,7 +158,11 @@ const Login = () => {
             disabled={loading}
             style={{ width: '100%', marginTop: '1rem', height: '44px' }}
           >
-            {loading ? <div className="spinner" /> : <>Sign In <ArrowRight size={18} /></>}
+            {loading ? (
+              <ButtonLoader text="Signing in..." />
+            ) : (
+              <>Sign In <ArrowRight size={18} /></>
+            )}
           </button>
         </form>
 

@@ -3,10 +3,12 @@ import {
   ShoppingCart, Search, Barcode, Plus, Minus, Trash2, Printer, 
   CheckCircle2, CreditCard, DollarSign, Smartphone, ArrowRight, 
   Receipt, Clock, User, Phone, Sparkles, RefreshCw, AlertTriangle, 
-  Layers, ChevronRight, X 
+  Layers, ChevronRight, X, Mail, Send, Check 
 } from 'lucide-react';
 import api from '../services/api';
 import { formatCurrency, getExpiryBadge, getStockBadge } from '../utils/helpers';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const Billing = () => {
   const [medicines, setMedicines] = useState([]);
@@ -18,6 +20,9 @@ const Billing = () => {
   const [cart, setCart] = useState([]);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [sendEmailReceipt, setSendEmailReceipt] = useState(true);
+  const [emailStatusMsg, setEmailStatusMsg] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('Cash');
   const [discountPercent, setDiscountPercent] = useState(0);
   const [taxPercent, setTaxPercent] = useState(5); // Default 5% GST
@@ -27,6 +32,8 @@ const Billing = () => {
   // Generated Invoice Modal State
   const [activeInvoice, setActiveInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [modalEmailInput, setModalEmailInput] = useState('');
+  const [sendingModalEmail, setSendingModalEmail] = useState(false);
 
   // Recent Sales History Tab
   const [activeTab, setActiveTab] = useState('pos'); // 'pos' | 'history'
@@ -188,6 +195,8 @@ const Billing = () => {
       const payload = {
         customerName: customerName.trim() || 'Walk-in Customer',
         customerPhone: customerPhone.trim() || '',
+        customerEmail: customerEmail.trim() || '',
+        sendEmailReceipt: Boolean(sendEmailReceipt),
         paymentMethod,
         discount: discountAmount,
         taxRate: Number(taxPercent),
@@ -204,12 +213,34 @@ const Billing = () => {
 
       if (res.data?.bill) {
         setActiveInvoice(res.data.bill);
+        setModalEmailInput(res.data.bill.customerEmail || customerEmail.trim());
         setShowInvoiceModal(true);
 
-        // Reset cart
+        const invCode = res.data.bill.invoiceNumber || res.data.bill.billNumber;
+        const totalPaid = Number(res.data.bill.grandTotal || 0).toFixed(2);
+
+        if (res.data?.emailStatus?.sent) {
+          setEmailStatusMsg({
+            type: 'success',
+            text: `✅ Bill Successful! Invoice: ${invCode} • Amount: ₹${totalPaid} • 📧 Receipt sent to ${res.data.bill.customerEmail}`
+          });
+        } else if (sendEmailReceipt && customerEmail.trim()) {
+          setEmailStatusMsg({
+            type: 'warning',
+            text: `✅ Bill Successful! Invoice: ${invCode} • Amount: ₹${totalPaid} (Email delivery notice: ${res.data.emailStatus?.message || 'Check Gmail App Password'})`
+          });
+        } else {
+          setEmailStatusMsg({
+            type: 'info',
+            text: `✅ Bill Successful! Invoice: ${invCode} • Amount: ₹${totalPaid} (Receipt email skipped)`
+          });
+        }
+
+        // Reset cart and customer inputs
         setCart([]);
         setCustomerName('');
         setCustomerPhone('');
+        setCustomerEmail('');
         setDiscountPercent(0);
 
         // Refresh medicines stock count
@@ -220,6 +251,35 @@ const Billing = () => {
       setErrorMsg(err.response?.data?.message || err.message || 'Failed to process bill.');
     } finally {
       setProcessing(false);
+    }
+  };
+
+  // Dispatch receipt email on-demand from invoice modal or history
+  const handleSendEmailFromModal = async () => {
+    if (!modalEmailInput.trim() || !modalEmailInput.includes('@')) {
+      setErrorMsg('Please enter a valid customer email address.');
+      return;
+    }
+    try {
+      setSendingModalEmail(true);
+      setErrorMsg('');
+      const billCode = activeInvoice.invoiceNumber || activeInvoice.billNumber;
+      const res = await api.post(`/billing/${billCode}/email`, { email: modalEmailInput.trim() });
+      if (res.data?.success) {
+        setActiveInvoice(prev => ({
+          ...prev,
+          customerEmail: modalEmailInput.trim(),
+          emailReceiptSent: true
+        }));
+        setEmailStatusMsg({
+          type: 'success',
+          text: `📧 Receipt successfully emailed to ${modalEmailInput.trim()}`
+        });
+      }
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || err.message || 'Failed to dispatch email receipt.');
+    } finally {
+      setSendingModalEmail(false);
     }
   };
 
@@ -273,6 +333,55 @@ const Billing = () => {
           </button>
         </div>
       </div>
+
+      {/* 📧 Bill Generated & Email Status Banner */}
+      {emailStatusMsg && (
+        <div style={{
+          padding: '0.85rem 1.15rem',
+          borderRadius: 'var(--radius-md)',
+          background: emailStatusMsg.type === 'success' 
+            ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.16), rgba(16, 185, 129, 0.16))'
+            : emailStatusMsg.type === 'warning'
+              ? 'rgba(245, 158, 11, 0.15)'
+              : 'rgba(59, 130, 246, 0.15)',
+          border: `1px solid ${
+            emailStatusMsg.type === 'success' 
+              ? 'rgba(34, 197, 94, 0.35)' 
+              : emailStatusMsg.type === 'warning'
+                ? 'rgba(245, 158, 11, 0.35)'
+                : 'rgba(59, 130, 246, 0.35)'
+          }`,
+          color: emailStatusMsg.type === 'success' ? '#22c55e' : emailStatusMsg.type === 'warning' ? '#f59e0b' : '#60a5fa',
+          fontSize: '0.875rem',
+          fontWeight: '500',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <CheckCircle2 size={18} />
+            <span>{emailStatusMsg.text}</span>
+          </div>
+          <button 
+            onClick={() => setEmailStatusMsg(null)}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'inherit', 
+              cursor: 'pointer', 
+              padding: '0.2rem',
+              display: 'flex',
+              alignItems: 'center',
+              opacity: 0.8
+            }}
+            title="Dismiss notification"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* POS WORKSPACE */}
       {activeTab === 'pos' && (
@@ -401,7 +510,13 @@ const Billing = () => {
           </div>
 
           {/* RIGHT: Active Billing Cart & Checkout Panel */}
-          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content', gap: '1.25rem' }}>
+          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: 'fit-content', gap: '1.25rem', position: 'relative', overflow: 'hidden' }}>
+            <FormLoadingOverlay 
+              active={processing} 
+              title="Generating Invoice & Finalizing Bill" 
+              subtitle={sendEmailReceipt && customerEmail.trim() ? `Recording sale & dispatching Gmail invoice to ${customerEmail.trim()}...` : "Recording transaction, generating invoice & updating inventory in MongoDB..."} 
+              badge="Billing Engine" 
+            />
             
             {/* Cart Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -421,7 +536,7 @@ const Billing = () => {
                   <input
                     type="text"
                     className="form-input"
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. Priya"
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     style={{ paddingLeft: '2rem', height: '36px', fontSize: '0.85rem' }}
@@ -442,6 +557,67 @@ const Billing = () => {
                     style={{ paddingLeft: '2rem', height: '36px', fontSize: '0.85rem' }}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Customer Email & Receipt Toggle */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div>
+                <label className="form-label" style={{ fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Mail size={13} color="var(--primary)" /> Customer Email (for Gmail Receipt)
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="email"
+                    className="form-input"
+                    placeholder="customer@gmail.com"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    style={{ paddingLeft: '2rem', height: '36px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Email ON / OFF Toggle */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.5rem 0.75rem',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--glass-border)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Mail size={15} color={sendEmailReceipt ? '#10b981' : 'var(--text-muted)'} />
+                  <div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '600', display: 'block' }}>Billing Email Receipt</span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Send receipt after successful billing</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSendEmailReceipt(!sendEmailReceipt)}
+                  style={{
+                    cursor: 'pointer',
+                    border: 'none',
+                    borderRadius: '9999px',
+                    padding: '0.2rem 0.65rem',
+                    fontSize: '0.72rem',
+                    fontWeight: '700',
+                    background: sendEmailReceipt ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                    color: sendEmailReceipt ? '#22c55e' : 'var(--text-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title={sendEmailReceipt ? 'Receipt will be sent via Gmail' : 'Receipt email disabled'}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: sendEmailReceipt ? '#22c55e' : '#64748b' }}></span>
+                  {sendEmailReceipt ? '🟢 ON' : '⚪ OFF'}
+                </button>
               </div>
             </div>
 
@@ -598,7 +774,11 @@ const Billing = () => {
               className="btn btn-primary"
               style={{ width: '100%', height: '46px', fontSize: '0.95rem' }}
             >
-              {processing ? <div className="spinner" /> : <>Generate & Print Bill <ArrowRight size={18} /></>}
+              {processing ? (
+                <ButtonLoader text="Generating Invoice & Finalizing..." />
+              ) : (
+                <>Generate & Print Bill <ArrowRight size={18} /></>
+              )}
             </button>
 
           </div>
@@ -622,8 +802,9 @@ const Billing = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Bill Number</th>
+                  <th>Invoice / Bill</th>
                   <th>Customer</th>
+                  <th>Email Receipt</th>
                   <th>Items Sold</th>
                   <th>Payment</th>
                   <th>Grand Total</th>
@@ -635,10 +816,25 @@ const Billing = () => {
                 {salesHistory.length > 0 ? (
                   salesHistory.map(sale => (
                     <tr key={sale._id || sale.billNumber}>
-                      <td style={{ fontWeight: '700', color: '#60a5fa' }}>{sale.billNumber}</td>
+                      <td style={{ fontWeight: '700', color: '#60a5fa' }}>{sale.invoiceNumber || sale.billNumber}</td>
                       <td>
                         <div style={{ fontWeight: '600' }}>{sale.customerName}</div>
-                        {sale.customerPhone && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sale.customerPhone}</div>}
+                        {sale.customerEmail ? (
+                          <div style={{ fontSize: '0.75rem', color: '#38bdf8' }}>{sale.customerEmail}</div>
+                        ) : sale.customerPhone ? (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{sale.customerPhone}</div>
+                        ) : null}
+                      </td>
+                      <td>
+                        {sale.emailReceiptSent ? (
+                          <span className="badge badge-success" style={{ fontSize: '0.72rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Mail size={12} /> Sent
+                          </span>
+                        ) : (
+                          <span className="badge badge-secondary" style={{ fontSize: '0.72rem' }}>
+                            Not Sent
+                          </span>
+                        )}
                       </td>
                       <td>{sale.items?.length || 1} items</td>
                       <td><span className="badge badge-secondary">{sale.paymentMethod || 'Cash'}</span></td>
@@ -650,10 +846,11 @@ const Billing = () => {
                         <button
                           onClick={() => {
                             setActiveInvoice(sale);
+                            setModalEmailInput(sale.customerEmail || '');
                             setShowInvoiceModal(true);
                           }}
                           className="btn btn-secondary"
-                          style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                          style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
                         >
                           <Printer size={12} /> View Invoice
                         </button>
@@ -662,7 +859,7 @@ const Billing = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                       No billing records found. Complete a sale in the POS tab to generate invoices.
                     </td>
                   </tr>
@@ -741,8 +938,8 @@ const Billing = () => {
             {/* Invoice Meta */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', fontSize: '0.825rem', background: 'rgba(255, 255, 255, 0.02)', padding: '0.75rem', borderRadius: 'var(--radius-sm)' }}>
               <div>
-                <div style={{ color: 'var(--text-muted)' }}>Bill Number:</div>
-                <div style={{ fontWeight: '700', color: '#60a5fa' }}>{activeInvoice.billNumber}</div>
+                <div style={{ color: 'var(--text-muted)' }}>Invoice ID:</div>
+                <div style={{ fontWeight: '700', color: '#60a5fa' }}>{activeInvoice.invoiceNumber || activeInvoice.billNumber}</div>
               </div>
               <div>
                 <div style={{ color: 'var(--text-muted)' }}>Date & Time:</div>
@@ -753,8 +950,18 @@ const Billing = () => {
                 <div style={{ fontWeight: '600' }}>{activeInvoice.customerName}</div>
               </div>
               <div>
+                <div style={{ color: 'var(--text-muted)' }}>Customer Email:</div>
+                <div style={{ fontWeight: '600', color: activeInvoice.customerEmail ? '#38bdf8' : 'var(--text-muted)' }}>
+                  {activeInvoice.customerEmail || 'Not Provided'}
+                </div>
+              </div>
+              <div>
                 <div style={{ color: 'var(--text-muted)' }}>Payment Mode:</div>
                 <div style={{ fontWeight: '600' }}>{activeInvoice.paymentMethod || 'Cash'}</div>
+              </div>
+              <div>
+                <div style={{ color: 'var(--text-muted)' }}>Status:</div>
+                <div style={{ fontWeight: '700', color: '#22c55e' }}>{activeInvoice.paymentStatus || 'SUCCESS'}</div>
               </div>
             </div>
 
@@ -805,6 +1012,60 @@ const Billing = () => {
                 <span>₹{(activeInvoice.grandTotal || activeInvoice.totalPrice || 0).toFixed(2)}</span>
               </div>
             </div>
+
+            {/* Email Receipt Status / Action in Modal */}
+            {activeInvoice.emailReceiptSent ? (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                padding: '0.65rem 0.9rem',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(34, 197, 94, 0.12)',
+                border: '1px solid rgba(34, 197, 94, 0.35)',
+                color: '#22c55e',
+                fontSize: '0.825rem'
+              }}>
+                <CheckCircle2 size={16} />
+                <span>📧 Receipt successfully sent to <strong>{activeInvoice.customerEmail}</strong></span>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+                padding: '0.75rem',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid var(--glass-border)'
+              }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Mail size={13} color="var(--primary)" /> Email this invoice to customer's Gmail:
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="email"
+                    placeholder="customer@gmail.com"
+                    value={modalEmailInput}
+                    onChange={(e) => setModalEmailInput(e.target.value)}
+                    className="form-input"
+                    style={{ flex: 1, height: '34px', fontSize: '0.8rem' }}
+                  />
+                  <button
+                    onClick={handleSendEmailFromModal}
+                    disabled={sendingModalEmail || !modalEmailInput.trim()}
+                    className="btn btn-primary"
+                    style={{ height: '34px', padding: '0 0.85rem', fontSize: '0.78rem', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    {sendingModalEmail ? (
+                      <ButtonLoader text="Sending..." />
+                    ) : (
+                      <><Send size={13} /> Send Gmail</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Friendly Greeting Footer */}
             <div style={{

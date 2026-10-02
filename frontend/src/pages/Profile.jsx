@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { User, Mail, Shield, Save } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import api from '../services/api';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const Profile = () => {
   const { user, setUser } = useAuth();
@@ -41,7 +43,13 @@ const Profile = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', position: 'relative', overflow: 'hidden' }}>
+        <FormLoadingOverlay 
+          active={saving} 
+          title="Updating Profile" 
+          subtitle="Saving account modifications to MongoDB..." 
+          badge="User Profile" 
+        />
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
           <div style={{
             width: '64px',
@@ -81,7 +89,7 @@ const Profile = () => {
         </div>
 
         <button type="submit" className="btn btn-primary" disabled={saving} style={{ height: '44px', marginTop: '0.5rem' }}>
-          {saving ? <div className="spinner" /> : <><Save size={18} /> Save Changes</>}
+          {saving ? <ButtonLoader text="Saving Changes..." /> : <><Save size={18} /> Save Changes</>}
         </button>
       </form>
     </div>

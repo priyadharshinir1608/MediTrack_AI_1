@@ -6,11 +6,16 @@ import {
   Save, 
   Search, 
   RefreshCw,
-  Tag
+  Tag,
+  Barcode,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import Loading from '../components/Loading';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const AddMedicine = () => {
   const navigate = useNavigate();
@@ -57,7 +62,7 @@ const AddMedicine = () => {
     }
   };
 
-  const handleBarcodeLookup = async (barcodeText) => {
+  const handleBarcodeLookup = async (barcodeText, ocrOverrides = {}) => {
     const code = (barcodeText || formData.barcode || '').trim();
     if (!code) return;
     setLookupLoading(true);
@@ -70,14 +75,15 @@ const AddMedicine = () => {
         setFormData(prev => ({
           ...prev,
           barcode: code,
-          name: med.name || prev.name,
+          name: ocrOverrides.name || med.name || prev.name,
           genericName: med.genericName || prev.genericName,
-          category: med.category || prev.category,
-          manufacturer: med.manufacturer || prev.manufacturer,
-          price: med.price ? Number(med.price) : prev.price,
-          costPrice: med.costPrice ? Number(med.costPrice) : (med.price ? Math.round(med.price * 0.7) : prev.costPrice),
-          batchNumber: med.batchNumber || prev.batchNumber,
-          expiryDate: med.expiryDate || prev.expiryDate
+          category: ocrOverrides.category || med.category || prev.category,
+          manufacturer: ocrOverrides.manufacturer || med.manufacturer || prev.manufacturer,
+          price: ocrOverrides.price > 0 ? ocrOverrides.price : (med.price ? Number(med.price) : prev.price),
+          costPrice: ocrOverrides.costPrice > 0 ? ocrOverrides.costPrice : (med.costPrice ? Number(med.costPrice) : prev.costPrice),
+          batchNumber: ocrOverrides.batchNumber || med.batchNumber || prev.batchNumber,
+          expiryDate: ocrOverrides.expiryDate || med.expiryDate || prev.expiryDate,
+          manufactureDate: ocrOverrides.manufactureDate || prev.manufactureDate
         }));
 
         playScannerBeep();
@@ -85,14 +91,14 @@ const AddMedicine = () => {
         setAutoFillBadge({
           type: 'success',
           text: med.predictedByAI
-            ? `🤖 AI Auto-Filled Details for [${code}]: ${med.name} (${med.category} by ${med.manufacturer})`
-            : `🎉 Matched "${med.name}"! Form specifications auto-filled.`
+            ? `🤖 AI Auto-Filled from Barcode [${code}]: ${med.name || 'Medicine'} (${med.category || 'Pharma'})`
+            : `🎉 Barcode [${code}] matched in database! Details auto-filled.`
         });
       } else {
         setFormData(prev => ({ ...prev, barcode: code }));
         setAutoFillBadge({
           type: 'info',
-          text: `Barcode [${code}] recorded.`
+          text: `Barcode [${code}] recorded from scan.`
         });
       }
     } catch (err) {
@@ -127,16 +133,29 @@ const AddMedicine = () => {
 
       if (res.data?.data) {
         const extracted = res.data.data;
+        const detectedBarcode = (extracted.barcode || '').trim();
         const newBatch = extracted.batchNumber || '';
         const newExp = extracted.expiryDate || '';
         const newPrice = extracted.price > 0 ? extracted.price : 150;
         const newCost = extracted.costPrice > 0 ? extracted.costPrice : (extracted.price > 0 ? Math.round(extracted.price * 0.7) : 100);
         const newCat = extracted.category || 'Tablet';
-        const detectedBarcode = extracted.barcode || '';
+        const newName = extracted.name && !['dd-mm-yyyy', 'scanned medicine', '50 150 100'].includes(extracted.name.toLowerCase()) ? extracted.name : '';
+
+        const ocrData = {
+          name: newName,
+          batchNumber: newBatch,
+          expiryDate: newExp,
+          manufactureDate: extracted.manufactureDate || '',
+          manufacturer: extracted.manufacturer || '',
+          category: newCat,
+          price: newPrice,
+          costPrice: newCost,
+          barcode: detectedBarcode
+        };
 
         setFormData(prev => ({
           ...prev,
-          name: extracted.name && !['dd-mm-yyyy', 'scanned medicine', '50 150 100'].includes(extracted.name.toLowerCase()) ? extracted.name : (prev.name || ''),
+          name: newName || prev.name,
           batchNumber: newBatch || prev.batchNumber,
           expiryDate: newExp || prev.expiryDate,
           manufactureDate: extracted.manufactureDate || prev.manufactureDate,
@@ -147,11 +166,16 @@ const AddMedicine = () => {
           barcode: detectedBarcode || prev.barcode
         }));
 
+        playScannerBeep();
+        setOcrSuccess(true);
+
         if (detectedBarcode) {
-          handleBarcodeLookup(detectedBarcode);
+          await handleBarcodeLookup(detectedBarcode, ocrData);
         } else {
-          playScannerBeep();
-          setOcrSuccess(true);
+          setAutoFillBadge({
+            type: 'success',
+            text: `✨ AI extracted packaging label details! Review and verify before saving.`
+          });
         }
       }
     } catch (err) {
@@ -189,7 +213,7 @@ const AddMedicine = () => {
           <Sparkles size={26} color="var(--primary)" /> Add New Medicine
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.2rem' }}>
-          Upload medicine packaging for AI OCR extraction, enter any barcode for instant AI auto-fill, or enter details manually.
+          Upload medicine packaging or a barcode image to automatically extract details, or enter specifications manually.
         </p>
       </div>
 
@@ -211,24 +235,30 @@ const AddMedicine = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem', alignItems: 'flex-start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: '1.5rem', alignItems: 'flex-start' }}>
         
         {/* ==================================================================== */}
-        {/* LEFT COLUMN: AI IMAGE SCANNER */}
+        {/* LEFT COLUMN: AI IMAGE & BARCODE SCANNER UPLOAD */}
         {/* ==================================================================== */}
-        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', height: 'fit-content' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
-            <Sparkles size={18} /> AI Image Scanner
-          </h3>
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', height: 'fit-content' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+              <Barcode size={20} /> AI Image & Barcode Scanner
+            </h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+              Upload medicine packaging, blister strip, or barcode image. The AI detects the barcode and extracts batch, expiry, and pricing automatically.
+            </p>
+          </div>
 
           <div style={{
             border: '2px dashed var(--glass-border)',
             borderRadius: 'var(--radius-md)',
-            padding: '1.75rem 1rem',
+            padding: '2rem 1rem',
             textAlign: 'center',
             background: 'rgba(15, 23, 42, 0.4)',
             position: 'relative',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
           }}>
             <input
               type="file"
@@ -247,18 +277,51 @@ const AddMedicine = () => {
 
             {preview ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
-                <img
-                  src={preview}
-                  alt="Medicine Strip"
-                  style={{ maxHeight: '180px', borderRadius: 'var(--radius-sm)', objectFit: 'contain' }}
-                />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Click or drop to replace image</span>
+                <div style={{ position: 'relative', display: 'inline-block', borderRadius: 'var(--radius-sm)', overflow: 'hidden' }}>
+                  <img
+                    src={preview}
+                    alt="Scanned Packaging / Barcode"
+                    style={{ maxHeight: '200px', maxWidth: '100%', borderRadius: 'var(--radius-sm)', objectFit: 'contain', display: 'block' }}
+                  />
+                  {ocrLoading && (
+                    <div className="ai-scanner-overlay">
+                      <div className="ai-scanner-grid" />
+                      <div className="holo-scan-laser" />
+                      <div className="hud-bracket hud-bracket-tl" />
+                      <div className="hud-bracket hud-bracket-tr" />
+                      <div className="hud-bracket hud-bracket-bl" />
+                      <div className="hud-bracket hud-bracket-br" />
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '12px',
+                        background: 'rgba(15, 23, 42, 0.88)',
+                        border: '1px solid rgba(56, 189, 248, 0.45)',
+                        borderRadius: '20px',
+                        padding: '0.3rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                      }}>
+                        <div className="ocr-waveform">
+                          <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '700', letterSpacing: '0.02em' }}>
+                          NEURAL SCANNING
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <span style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: '600' }}>
+                  Click or drop another image to re-scan
+                </span>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{
-                  width: '50px',
-                  height: '50px',
+                  width: '54px',
+                  height: '54px',
                   borderRadius: '50%',
                   background: 'var(--primary-glow)',
                   color: 'var(--primary)',
@@ -266,21 +329,33 @@ const AddMedicine = () => {
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <Upload size={24} />
+                  <Upload size={26} />
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.92rem', fontWeight: '700', display: 'block' }}>Upload Medicine Label</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>AI OpenCV & EasyOCR extraction</span>
+                  <span style={{ fontSize: '0.95rem', fontWeight: '700', display: 'block' }}>
+                    Upload Medicine Label or Barcode
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    PNG, JPG, WebP • Auto-extracts Barcode & Text
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          {ocrLoading && <Loading message="AI extracting specifications & barcode..." />}
+          {ocrLoading && (
+            <Loading 
+              size="small" 
+              variant="card" 
+              icon={Sparkles} 
+              message="EasyOCR & Barcode Neural Pipeline" 
+              subtext="Scanning packaging typography, barcode symbology & expiration dates..." 
+            />
+          )}
 
           {ocrSuccess && (
             <div style={{
-              padding: '0.75rem',
+              padding: '0.85rem',
               borderRadius: 'var(--radius-md)',
               background: 'var(--success-glow)',
               border: '1px solid rgba(16, 185, 129, 0.3)',
@@ -288,24 +363,68 @@ const AddMedicine = () => {
               fontSize: '0.82rem',
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.3rem'
+              gap: '0.45rem'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '700' }}>
-                <CheckCircle2 size={16} /> Fields Auto-Filled From AI Scan!
+                <CheckCircle2 size={16} /> Details Extracted & Auto-Filled!
               </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                {formData.batchNumber && <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>Batch: <strong>{formData.batchNumber}</strong></span>}
-                {formData.expiryDate && <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>Expiry: <strong>{formData.expiryDate}</strong></span>}
-                {formData.price > 0 && <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>MRP: <strong>₹{formData.price}</strong></span>}
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                {formData.barcode && (
+                  <span style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '600' }}>
+                    Barcode: {formData.barcode}
+                  </span>
+                )}
+                {formData.name && (
+                  <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                    Name: <strong>{formData.name}</strong>
+                  </span>
+                )}
+                {formData.batchNumber && (
+                  <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                    Batch: <strong>{formData.batchNumber}</strong>
+                  </span>
+                )}
+                {formData.expiryDate && (
+                  <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                    Expiry: <strong>{formData.expiryDate}</strong>
+                  </span>
+                )}
+                {formData.price > 0 && (
+                  <span style={{ background: 'rgba(255,255,255,0.06)', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
+                    MRP: <strong>₹{formData.price}</strong>
+                  </span>
+                )}
               </div>
             </div>
           )}
+
+          {/* Workflow Guide */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            border: '1px solid var(--glass-border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.75rem',
+            fontSize: '0.72rem',
+            color: 'var(--text-muted)',
+            lineHeight: 1.5
+          }}>
+            <strong style={{ color: 'var(--text-secondary)' }}>💡 Verification Workflow:</strong>
+            <div style={{ marginTop: '0.2rem' }}>
+              Upload Image → AI Auto-Fills Form → Review / Edit on Right → Save to Inventory.
+            </div>
+          </div>
         </div>
 
         {/* ==================================================================== */}
         {/* RIGHT COLUMN: MEDICINE SPECIFICATIONS FORM */}
         {/* ==================================================================== */}
-        <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', overflow: 'hidden' }}>
+          <FormLoadingOverlay 
+            active={submitting} 
+            title="Saving Medicine to Inventory" 
+            subtitle="Registering barcode, batch details, and pricing in MongoDB..." 
+            badge="Inventory Engine"
+          />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
             <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Medicine Specifications</h3>
             {lookupLoading && <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>AI Auto-filling...</span>}
@@ -458,7 +577,11 @@ const AddMedicine = () => {
             disabled={submitting}
             style={{ marginTop: '0.75rem', height: '46px', fontWeight: '700', fontSize: '0.95rem' }}
           >
-            {submitting ? <div className="spinner" /> : <><Save size={18} /> Save Medicine to Inventory</>}
+            {submitting ? (
+              <ButtonLoader text="Saving Medicine to Inventory..." />
+            ) : (
+              <><Save size={18} /> Save Medicine to Inventory</>
+            )}
           </button>
         </form>
 

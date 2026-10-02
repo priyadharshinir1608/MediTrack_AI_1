@@ -29,13 +29,18 @@ const getCurrentTimeString = (timezone = 'Asia/Kolkata') => {
   }
 };
 
+let isCronRunning = false;
+
 /**
  * Checks all users whose scheduled alert time matches the current minute
  */
 const checkScheduledTimeAlerts = async () => {
+  // Prevent overlapping executions if an earlier run is still processing
+  if (isCronRunning) return;
   // Skip if MongoDB is not ready yet (e.g. startup or transient reconnect)
   if (!isDbReady()) return;
 
+  isCronRunning = true;
   const currentHHMM = getCurrentTimeString();
   
   try {
@@ -45,7 +50,7 @@ const checkScheduledTimeAlerts = async () => {
         { 'alertSettings.dailyAlertTime': currentHHMM },
         { 'alertSettings.dailyAlertTime': { $exists: false }, $expr: { $eq: [currentHHMM, '08:00'] } }
       ]
-    });
+    }).maxTimeMS(4000);
 
     if (users.length > 0) {
       console.log(`[Alert Scheduler] Matching users found for scheduled time [${currentHHMM}]: ${users.length} user(s).`);
@@ -54,7 +59,9 @@ const checkScheduledTimeAlerts = async () => {
       }
     }
   } catch (err) {
-    console.error('[Alert Scheduler] Minute cron execution error:', err.message);
+    console.warn('[Alert Scheduler] Minute cron notice:', err.message);
+  } finally {
+    isCronRunning = false;
   }
 };
 

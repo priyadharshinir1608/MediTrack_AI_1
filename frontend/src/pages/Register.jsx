@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, Mail, Lock, User, UserCheck } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -41,7 +43,13 @@ const Register = () => {
       background: 'radial-gradient(circle at top left, rgba(139, 92, 246, 0.15), transparent 40%), var(--bg-primary)',
       padding: '1.5rem'
     }}>
-      <div className="glass-card fade-in" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem 2rem' }}>
+      <div className="glass-card fade-in" style={{ width: '100%', maxWidth: '440px', padding: '2.5rem 2rem', position: 'relative', overflow: 'hidden' }}>
+        <FormLoadingOverlay 
+          active={loading} 
+          title="Registering Staff Account" 
+          subtitle="Creating credentials & configuring pharmacy console permissions..." 
+          badge="Staff Gateway" 
+        />
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
             width: '48px',
@@ -133,7 +141,11 @@ const Register = () => {
             disabled={loading}
             style={{ width: '100%', marginTop: '1rem', height: '44px' }}
           >
-            {loading ? <div className="spinner" /> : <>Register Account <UserCheck size={18} /></>}
+            {loading ? (
+              <ButtonLoader text="Creating Account..." />
+            ) : (
+              <>Register Account <UserCheck size={18} /></>
+            )}
           </button>
         </form>
 

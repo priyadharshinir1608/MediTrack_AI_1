@@ -17,8 +17,9 @@ const LayoutContent = () => {
   const location = useLocation();
 
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isLandingPage = location.pathname === '/' || location.pathname === '/landing';
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage) {
     return <AppRoutes />;
   }
 

@@ -4,18 +4,64 @@
 }
 
 @keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+@keyframes counterSpin {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(0.95); opacity: 0.85; }
+  15% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.8)); }
+  30% { transform: scale(0.98); opacity: 0.9; }
+  45% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.7)); }
+  60% { transform: scale(0.95); opacity: 0.85; }
+  100% { transform: scale(0.95); opacity: 0.85; }
+}
+
+@keyframes rippleWave {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+    border-color: rgba(59, 130, 246, 0.8);
+  }
+  50% {
+    border-color: rgba(16, 185, 129, 0.5);
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+    border-color: rgba(59, 130, 246, 0);
+  }
+}
+
+@keyframes textShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes scanLaser {
+  0% { top: 0%; opacity: 0.2; }
+  50% { opacity: 0.9; }
+  100% { top: 100%; opacity: 0.2; }
+}
+
 .fade-in {
   animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
+/* Standard Spinner */
 .spinner {
   width: 24px;
   height: 24px;
@@ -24,3 +70,345 @@
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
+
+/* ======================================================== */
+/* 🏥 MedScan AI Core Loading Animation System              */
+/* ======================================================== */
+
+.medscan-loader-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  position: relative;
+  user-select: none;
+}
+
+.medscan-loader-fullscreen {
+  min-height: 80vh;
+  width: 100%;
+}
+
+.medscan-loader-card {
+  min-height: 240px;
+  width: 100%;
+}
+
+/* Orb & Rings Container */
+.medscan-orb-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Outer Sonar Radar Ripple */
+.medscan-ripple {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(59, 130, 246, 0.6);
+  animation: rippleWave 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+/* Outer Orbiting Ring */
+.medscan-ring-outer {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px dashed rgba(59, 130, 246, 0.65);
+  border-top-color: #60a5fa;
+  border-right-color: #38bdf8;
+  animation: spin 3.5s linear infinite;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+}
+
+/* Inner Counter-Orbiting Ring */
+.medscan-ring-inner {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #10b981;
+  border-bottom-color: #34d399;
+  animation: counterSpin 2s cubic-bezier(0.4, 0.1, 0.2, 0.9) infinite;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+/* Center Pulsing AI Core */
+.medscan-core {
+  position: relative;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(30, 58, 138, 0.85) 0%, rgba(15, 23, 42, 0.95) 85%);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #60a5fa;
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4), inset 0 0 15px rgba(16, 185, 129, 0.25);
+  animation: heartbeat 2s ease-in-out infinite;
+  z-index: 2;
+}
+
+/* Text Shimmer Effect */
+.medscan-loader-title {
+  font-family: var(--font-heading, 'Outfit', sans-serif);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(90deg, #94a3b8 0%, #ffffff 50%, #94a3b8 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: textShimmer 2.5s linear infinite;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.medscan-loader-subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  max-width: 380px;
+  line-height: 1.4;
+}
+
+/* Staggered Dot Flashing */
+.dot-flashing {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+}
+
+.dot-flashing span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #38bdf8;
+  display: inline-block;
+  animation: dotPulse 1.4s infinite ease-in-out both;
+}
+
+.dot-flashing span:nth-child(1) { animation-delay: -0.32s; }
+.dot-flashing span:nth-child(2) { animation-delay: -0.16s; }
+.dot-flashing span:nth-child(3) { animation-delay: 0s; }
+
+/* ======================================================== */
+/* ⚡ ENHANCED FORM LOADING ANIMATION SYSTEM                */
+/* ======================================================== */
+
+@keyframes formLaserSweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes scanHolo {
+  0% { top: 0%; opacity: 0.9; }
+  50% { opacity: 1; }
+  100% { top: 96%; opacity: 0.9; }
+}
+
+@keyframes scanGrid {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 40px; }
+}
+
+@keyframes buttonGlowPulse {
+  0%, 100% { box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.65), 0 0 8px rgba(59, 130, 246, 0.8); }
+}
+
+@keyframes waveBar {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+@keyframes inputAutofillFlash {
+  0% { background-color: rgba(16, 185, 129, 0.28); border-color: #10b981; box-shadow: 0 0 12px rgba(16, 185, 129, 0.4); }
+  100% { background-color: rgba(15, 23, 42, 0.6); border-color: var(--glass-border); box-shadow: none; }
+}
+
+/* 🛡️ Frosted Form Loading Overlay */
+.form-loading-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(10, 15, 30, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  overflow: hidden;
+  animation: fadeIn 0.25s ease-out forwards;
+  pointer-events: all;
+}
+
+/* Top Laser Scan Beam along the top border */
+.form-overlay-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8, #10b981, transparent);
+  box-shadow: 0 0 12px #38bdf8, 0 0 20px #10b981;
+  animation: formLaserSweep 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* 🔘 High-Tech Button Spinner */
+.btn-spinner-ai {
+  width: 18px;
+  height: 18px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.btn-spinner-ai::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #38bdf8;
+  animation: spin 0.7s linear infinite;
+}
+
+.btn-spinner-ai::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1.5px solid transparent;
+  border-bottom-color: #10b981;
+  animation: counterSpin 0.9s linear infinite;
+}
+
+.btn-loader-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  letter-spacing: -0.01em;
+}
+
+/* 📷 Holographic AI Image Scanner Overlay */
+.ai-scanner-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ai-scanner-grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(56, 189, 248, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px);
+  background-size: 20px 20px;
+  animation: scanGrid 3s linear infinite;
+}
+
+.holo-scan-laser {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8 30%, #34d399 70%, transparent);
+  box-shadow: 0 0 14px #38bdf8, 0 0 24px #10b981;
+  animation: scanHolo 2s ease-in-out infinite alternate;
+  z-index: 5;
+}
+
+/* HUD Corner Brackets */
+.hud-bracket {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-color: #38bdf8;
+  border-style: solid;
+  pointer-events: none;
+}
+.hud-bracket-tl { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+.hud-bracket-tr { top: 8px; right: 8px; border-width: 2px 2px 0 0; }
+.hud-bracket-bl { bottom: 8px; left: 8px; border-width: 0 0 2px 2px; }
+.hud-bracket-br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+/* AI Waveform Telemetry Indicator */
+.ocr-waveform {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.ocr-waveform span {
+  width: 3px;
+  background: #38bdf8;
+  border-radius: 2px;
+  animation: waveBar 0.9s ease-in-out infinite;
+}
+
+.ocr-waveform span:nth-child(1) { animation-delay: 0.1s; }
+.ocr-waveform span:nth-child(2) { animation-delay: 0.3s; background: #34d399; }
+.ocr-waveform span:nth-child(3) { animation-delay: 0.2s; }
+.ocr-waveform span:nth-child(4) { animation-delay: 0.4s; background: #34d399; }
+.ocr-waveform span:nth-child(5) { animation-delay: 0.15s; }
+
+.input-autofill-flash {
+  animation: inputAutofillFlash 1.5s ease-out;
+}
+
+/* 🚀 Boot & Splash Screen Styles */
+.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0f1d;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.75rem;
+  padding: 2rem;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+  user-select: none;
+}
+
+.boot-progress-track {
+  width: 100%;
+  max-width: 320px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.boot-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #10b981);
+  box-shadow: 0 0 12px #38bdf8, 0 0 16px #10b981;
+  border-radius: 9999px;
+  transition: width 0.35s ease-out;
+}
+
+

@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const { admin, firebaseInitialized } = require('../config/firebase');
 const User = require('../models/User');
 
@@ -38,15 +39,17 @@ const verifyToken = async (req, res, next) => {
 
     req.firebaseUser = decodedToken;
 
-    // Attach MongoDB user if available (safe lookup decoupled from token verification)
+    // Attach MongoDB user if connected (non-blocking fallback prevents event loop freezes)
     let dbUser = null;
-    try {
-      dbUser = await User.findOne({ firebaseUid: decodedToken.uid });
-      if (!dbUser && decodedToken.email) {
-        dbUser = await User.findOne({ email: decodedToken.email });
+    if (mongoose.connection.readyState === 1) {
+      try {
+        dbUser = await User.findOne({ firebaseUid: decodedToken.uid }).maxTimeMS(2500);
+        if (!dbUser && decodedToken.email) {
+          dbUser = await User.findOne({ email: decodedToken.email }).maxTimeMS(2500);
+        }
+      } catch (dbErr) {
+        // Soft fallback to token identity without blocking request flow
       }
-    } catch (dbErr) {
-      console.warn('[Auth Middleware] MongoDB profile lookup warning:', dbErr.message);
     }
 
     req.user = dbUser || {

@@ -79,8 +79,10 @@ def handle_demand():
 def handle_sales_analytics():
     data = request.json or {}
     history = data.get('dailySalesHistory', [])
+    monthly_stock = data.get('monthlyStockHistory', None)
+    inventory_summary = data.get('inventorySummary', None)
 
-    result = analyze_daily_sales(history)
+    result = analyze_daily_sales(history, monthly_stock, inventory_summary)
     return jsonify({"success": True, "analytics": result})
 
 if __name__ == '__main__':

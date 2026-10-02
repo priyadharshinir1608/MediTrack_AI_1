@@ -12,14 +12,19 @@ const saleItemSchema = new mongoose.Schema({
 const saleSchema = new mongoose.Schema(
   {
     billNumber: { type: String, required: true, unique: true },
+    invoiceNumber: { type: String },
     customerName: { type: String, default: 'Walk-in Customer' },
     customerPhone: { type: String, default: '' },
+    customerEmail: { type: String, default: '' },
     items: [saleItemSchema],
     totalAmount: { type: Number, required: true },
     discount: { type: Number, default: 0 },
     taxAmount: { type: Number, default: 0 },
     grandTotal: { type: Number, required: true },
     paymentMethod: { type: String, enum: ['Cash', 'UPI', 'Card', 'Credit'], default: 'Cash' },
+    paymentStatus: { type: String, enum: ['SUCCESS', 'PENDING', 'FAILED', 'CANCELLED'], default: 'SUCCESS' },
+    emailReceiptSent: { type: Boolean, default: false },
+    emailReceiptError: { type: String, default: '' },
     soldBy: { type: String, default: 'Pharmacist' },
     date: { type: Date, default: Date.now }
   },

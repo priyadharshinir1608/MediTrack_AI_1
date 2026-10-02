@@ -6,6 +6,7 @@ import Loading from './components/Loading';
 // Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import AddMedicine from './pages/AddMedicine';
 import MedicineList from './pages/MedicineList';
@@ -16,7 +17,6 @@ import Billing from './pages/Billing';
 import Reports from './pages/Reports';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
 
 const ProtectedRoute = ({ children }) => {
@@ -36,12 +36,13 @@ const ProtectedRoute = ({ children }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public Auth Routes */}
+      {/* Public Landing & Auth Routes */}
+      <Route path="/" element={<Landing />} />
+      <Route path="/landing" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
       {/* Protected App Routes */}
-      <Route path="/" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/medicines" element={<ProtectedRoute><MedicineList /></ProtectedRoute>} />
       <Route path="/medicines/:id" element={<ProtectedRoute><MedicineDetail /></ProtectedRoute>} />
@@ -52,7 +53,7 @@ const AppRoutes = () => {
       <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
       <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
       <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/settings" element={<Navigate to="/notifications" replace />} />
 
       {/* 404 Route */}
       <Route path="*" element={<NotFound />} />

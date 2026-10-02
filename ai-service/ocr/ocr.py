@@ -1,4 +1,5 @@
 import os
+import re
 import easyocr
 from .preprocess import preprocess_image
 from .barcode import detect_barcode
@@ -22,8 +23,10 @@ def process_medicine_image(image_bytes):
     # 1. OpenCV Preprocessing
     raw_img, enhanced_img = preprocess_image(image_bytes)
 
-    # 2. Barcode Detection
+    # 2. Barcode Detection (check raw image, then enhanced image if not detected)
     barcode = detect_barcode(raw_img)
+    if not barcode and enhanced_img is not None:
+        barcode = detect_barcode(enhanced_img)
 
     # 3. Text Detection via EasyOCR with 2D spatial line reconstruction
     raw_text = ""
@@ -68,6 +71,11 @@ def process_medicine_image(image_bytes):
     # 4. Extract structured fields
     extracted = extract_medicine_fields(raw_text)
     if barcode:
-        extracted["barcode"] = barcode
+        extracted["barcode"] = str(barcode).strip()
+    elif not extracted.get("barcode"):
+        # Check if EasyOCR read barcode digits directly (common Indian pharma 890... or 8/12/13/14-digit codes)
+        cand_bc = re.search(r'\b(890\d{10}|\d{12,14}|\d{8})\b', raw_text)
+        if cand_bc:
+            extracted["barcode"] = cand_bc.group(1).strip()
 
     return extracted

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import { formatDate } from '../utils/helpers';
+import FormLoadingOverlay from '../components/FormLoadingOverlay';
+import ButtonLoader from '../components/ButtonLoader';
 
 const Notifications = () => {
   const [activeTab, setActiveTab] = useState('feed'); // 'feed' | 'settings'
@@ -423,7 +425,13 @@ const Notifications = () => {
       {/* TAB 2: ALERT SETTINGS & AUTOMATION (Gmail + WhatsApp + Time) */}
       {/* ==================================================================== */}
       {activeTab === 'settings' && (
-        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', position: 'relative' }}>
+          <FormLoadingOverlay 
+            active={saving} 
+            title="Saving Notification Settings" 
+            subtitle="Synchronizing Gmail & WhatsApp channels and daily cron alerts..." 
+            badge="Alert Engine" 
+          />
 
           {/* 📬 SECTION 1: Delivery Channels (Gmail + WhatsApp) */}
           <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -491,7 +499,7 @@ const Notifications = () => {
                   className="btn btn-secondary"
                   style={{ height: '36px', fontSize: '0.8rem', marginTop: '0.25rem' }}
                 >
-                  {testingEmail ? <div className="spinner" /> : <><Send size={14} /> Send Test Email</>}
+                  {testingEmail ? <ButtonLoader text="Sending Test Email..." /> : <><Send size={14} /> Send Test Email</>}
                 </button>
               </div>
 
@@ -552,7 +560,7 @@ const Notifications = () => {
                   className="btn btn-secondary"
                   style={{ height: '36px', fontSize: '0.8rem', marginTop: '0.25rem', borderColor: 'rgba(34, 197, 94, 0.4)', color: '#22c55e' }}
                 >
-                  {testingWhatsApp ? <div className="spinner" /> : <><Send size={14} /> Send Test WhatsApp</>}
+                  {testingWhatsApp ? <ButtonLoader text="Sending Test WhatsApp..." /> : <><Send size={14} /> Send Test WhatsApp</>}
                 </button>
               </div>
 
@@ -724,7 +732,7 @@ const Notifications = () => {
             className="btn btn-primary"
             style={{ height: '46px', fontWeight: '700', fontSize: '0.95rem' }}
           >
-            {saving ? <div className="spinner" /> : <><Save size={18} /> Save Alert Settings</>}
+            {saving ? <ButtonLoader text="Saving Alert Settings..." /> : <><Save size={18} /> Save Alert Settings</>}
           </button>
 
         </form>

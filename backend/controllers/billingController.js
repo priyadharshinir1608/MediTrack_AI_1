@@ -1,12 +1,14 @@
 const Medicine = require('../models/Medicine');
 const Sale = require('../models/Sale');
 const { addNotification, logActivity } = require('../services/firestoreService');
+const { sendBillEmail } = require('../services/emailService');
 
-// Generate unique bill number
+// Generate unique bill / invoice number (e.g. INV-2026-00125)
 const generateBillNumber = () => {
-  const timestamp = Date.now().toString().slice(-6);
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `MED-BILL-${timestamp}-${random}`;
+  const year = new Date().getFullYear();
+  const timestamp = Date.now().toString().slice(-4);
+  const random = Math.floor(100 + Math.random() * 900);
+  return `INV-${year}-${timestamp}${random}`;
 };
 
 // Process Checkout & Generate Bill
@@ -15,6 +17,8 @@ const createBill = async (req, res, next) => {
     const { 
       customerName = 'Walk-in Customer', 
       customerPhone = '', 
+      customerEmail = '',
+      sendEmailReceipt = true,
       items = [], 
       paymentMethod = 'Cash',
       discount = 0,
@@ -80,31 +84,57 @@ const createBill = async (req, res, next) => {
 
     const billNumber = generateBillNumber();
 
-    // 3. Save Sale Record in MongoDB
+    // 3. Save Sale Record in MongoDB with SUCCESS paymentStatus
     const sale = await Sale.create({
       billNumber,
-      customerName,
-      customerPhone,
+      invoiceNumber: billNumber,
+      customerName: customerName.trim() || 'Walk-in Customer',
+      customerPhone: customerPhone.trim() || '',
+      customerEmail: customerEmail.trim().toLowerCase() || '',
       items: processedItems,
       totalAmount: subtotal,
       discount: discountAmount,
       taxAmount: taxAmount,
       grandTotal: grandTotal,
       paymentMethod,
+      paymentStatus: 'SUCCESS',
+      emailReceiptSent: false,
       soldBy: req.user?.name || req.user?.email || 'Pharmacist'
     });
 
-    // 4. Log Real-time Audit in Firestore
+    // 4. Send Gmail receipt only after successful billing
+    let emailStatus = { sent: false, message: 'Receipt email skipped or not requested.' };
+
+    if (sale.paymentStatus === 'SUCCESS' && sendEmailReceipt && sale.customerEmail && sale.customerEmail.includes('@')) {
+      try {
+        const mailRes = await sendBillEmail({ to: sale.customerEmail, sale });
+        if (mailRes.success) {
+          sale.emailReceiptSent = true;
+          await sale.save();
+          emailStatus = { sent: true, message: `Receipt successfully emailed to ${sale.customerEmail}` };
+        } else {
+          sale.emailReceiptError = mailRes.message || 'Delivery error';
+          await sale.save();
+          emailStatus = { sent: false, message: mailRes.message || 'Email delivery failed' };
+        }
+      } catch (mailErr) {
+        console.warn('[Billing Controller] Email receipt error:', mailErr.message);
+        emailStatus = { sent: false, message: mailErr.message };
+      }
+    }
+
+    // 5. Log Real-time Audit in Firestore
     await logActivity({
       action: 'medicine_sold',
-      details: `Generated ${billNumber} for ${customerName} (Total: ₹${grandTotal.toFixed(2)}, Items: ${processedItems.length})`,
+      details: `Generated ${billNumber} for ${sale.customerName} (Total: ₹${grandTotal.toFixed(2)}, Items: ${processedItems.length}${sale.emailReceiptSent ? ', Receipt Emailed' : ''})`,
       userId: req.user?.firebaseUid || 'counter_staff'
     });
 
     res.status(201).json({
       success: true,
       message: 'Bill generated successfully and inventory stock updated.',
-      bill: sale
+      bill: sale,
+      emailStatus
     });
   } catch (err) {
     next(err);
@@ -122,8 +152,10 @@ const getBillingHistory = async (req, res, next) => {
     if (search) {
       query.$or = [
         { billNumber: { $regex: search, $options: 'i' } },
+        { invoiceNumber: { $regex: search, $options: 'i' } },
         { customerName: { $regex: search, $options: 'i' } },
-        { customerPhone: { $regex: search, $options: 'i' } }
+        { customerPhone: { $regex: search, $options: 'i' } },
+        { customerEmail: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -150,7 +182,11 @@ const getBillByNumber = async (req, res, next) => {
   try {
     const { billNumber } = req.params;
     const bill = await Sale.findOne({ 
-      $or: [{ billNumber }, { _id: billNumber.match(/^[0-9a-fA-F]{24}$/) ? billNumber : null }] 
+      $or: [
+        { billNumber },
+        { invoiceNumber: billNumber },
+        { _id: billNumber.match(/^[0-9a-fA-F]{24}$/) ? billNumber : null }
+      ] 
     }).populate('items.medicine');
 
     if (!bill) {
@@ -163,8 +199,55 @@ const getBillByNumber = async (req, res, next) => {
   }
 };
 
+// Send or Resend Invoice via Email
+const sendInvoiceEmail = async (req, res, next) => {
+  try {
+    const { billNumber } = req.params;
+    const { email } = req.body;
+
+    const sale = await Sale.findOne({
+      $or: [
+        { billNumber },
+        { invoiceNumber: billNumber },
+        { _id: billNumber.match(/^[0-9a-fA-F]{24}$/) ? billNumber : null }
+      ]
+    });
+
+    if (!sale) {
+      return res.status(404).json({ success: false, message: 'Invoice not found' });
+    }
+
+    const recipient = (email || sale.customerEmail || '').trim().toLowerCase();
+    if (!recipient || !recipient.includes('@')) {
+      return res.status(400).json({ success: false, message: 'A valid customer email address is required.' });
+    }
+
+    const mailRes = await sendBillEmail({ to: recipient, sale });
+    if (mailRes.success) {
+      sale.customerEmail = recipient;
+      sale.emailReceiptSent = true;
+      sale.emailReceiptError = '';
+      await sale.save();
+
+      return res.status(200).json({
+        success: true,
+        message: `Billing receipt successfully emailed to ${recipient}`,
+        sale
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: mailRes.message || 'Failed to send billing email receipt'
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   createBill,
   getBillingHistory,
-  getBillByNumber
+  getBillByNumber,
+  sendInvoiceEmail
 };
