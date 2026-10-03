@@ -27,21 +27,55 @@ export const loginWithGoogle = async () => {
   }
 };
 
+/**
+ * Translate Firebase error codes into clear, user-friendly instructions
+ */
+export const getAuthErrorMessage = (error) => {
+  const code = error?.code || '';
+  switch (code) {
+    case 'auth/user-not-found':
+      return 'Account not registered! No pharmacy staff account found with this email. Please register first.';
+    case 'auth/invalid-credential':
+    case 'auth/wrong-password':
+      return 'Incorrect email or password! If you have not registered yet, please create an account first.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address (e.g. pharmacist@medscan.ai).';
+    case 'auth/email-already-in-use':
+      return 'This email address is already registered! Please sign in with your password.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Please use at least 6 characters.';
+    case 'auth/user-disabled':
+      return 'This pharmacy staff account has been deactivated. Please contact your system administrator.';
+    case 'auth/too-many-requests':
+      return 'Too many failed login attempts. Access is temporarily restricted. Please wait a few moments before trying again.';
+    case 'auth/network-request-failed':
+      return 'Network connection error. Please verify your internet connection and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in popup was cancelled before completion.';
+    default:
+      return error?.message || 'Authentication failed. Please verify your credentials.';
+  }
+};
+
 export const registerUser = async (name, email, password, role = 'pharmacist') => {
   try {
-    let firebaseUid;
+    // 1. Create account strictly in Firebase Auth
+    let res;
     try {
-      const res = await createUserWithEmailAndPassword(auth, email, password);
-      firebaseUid = res.user.uid;
-      // Sign out from client immediately so the user must log in explicitly on Login page
-      await firebaseSignOut(auth);
-      localStorage.removeItem('medscan_dev_token');
+      res = await createUserWithEmailAndPassword(auth, email, password);
     } catch (fbErr) {
-      console.warn('[Firebase Auth] Notice:', fbErr.message, '- Using dev fallback user registration');
-      firebaseUid = 'dev_user_' + Date.now();
+      const friendlyMsg = getAuthErrorMessage(fbErr);
+      const customErr = new Error(friendlyMsg);
+      customErr.code = fbErr.code || 'auth/registration-failed';
+      throw customErr;
     }
 
-    // Register user metadata in MongoDB
+    const firebaseUid = res.user.uid;
+    // Sign out from client immediately so the user must log in explicitly on Login page
+    await firebaseSignOut(auth);
+    localStorage.removeItem('medscan_dev_token');
+
+    // 2. Register user metadata in MongoDB
     const backendRes = await api.post('/auth/register', {
       firebaseUid,
       name,
@@ -51,25 +85,30 @@ export const registerUser = async (name, email, password, role = 'pharmacist') =
 
     return backendRes.data;
   } catch (err) {
-    throw new Error(err.response?.data?.message || err.message);
+    throw err;
   }
 };
 
 export const loginUser = async (email, password) => {
   try {
+    // 1. Authenticate credentials strictly against Firebase Auth
     try {
       await signInWithEmailAndPassword(auth, email, password);
       localStorage.removeItem('medscan_dev_token');
     } catch (fbErr) {
-      console.warn('[Firebase Auth] Notice:', fbErr.message, '- Logging in with dev simulation credentials');
-      localStorage.setItem('medscan_dev_token', 'mock_token_dev_user_demo');
+      // STRICT: Never allow unregistered users to log in!
+      console.warn('[Firebase Auth] Login rejected:', fbErr.code, fbErr.message);
+      const friendlyMsg = getAuthErrorMessage(fbErr);
+      const customErr = new Error(friendlyMsg);
+      customErr.code = fbErr.code || 'auth/invalid-credential';
+      throw customErr;
     }
 
-    // Sync profile with MongoDB
+    // 2. Sync profile with MongoDB
     const syncRes = await api.post('/auth/sync');
     return syncRes.data;
   } catch (err) {
-    throw new Error(err.response?.data?.message || err.message);
+    throw err;
   }
 };
 

@@ -1,33 +1,144 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Sparkles, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import FormLoadingOverlay from '../components/FormLoadingOverlay';
 import ButtonLoader from '../components/ButtonLoader';
+import AuthNotification from '../components/AuthNotification';
 
 const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, loginWithGoogle } = useAuth();
+  
   const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || '');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [shake, setShake] = useState(false);
+  const [popup, setPopup] = useState(null);
+
+  // If redirected with success message from Registration
+  useEffect(() => {
+    if (location.state?.successMessage) {
+      setPopup({
+        type: 'success',
+        title: 'Registration Successful! 🎉',
+        message: location.state.successMessage
+      });
+    }
+  }, [location.state]);
+
+  const triggerShake = () => {
+    setShake(false);
+    setTimeout(() => setShake(true), 15);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccessMsg('');
+
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    // 1. Check if both fields are empty
+    if (!trimmedEmail && !trimmedPassword) {
+      setFieldErrors({ email: true, password: true });
+      setPopup({
+        type: 'warning',
+        title: 'Please Fill In All Details!',
+        message: 'Both email address and password are required. Please enter your credentials to log in.'
+      });
+      triggerShake();
+      return;
+    }
+
+    // 2. Check if email is empty
+    if (!trimmedEmail) {
+      setFieldErrors({ email: true, password: false });
+      setPopup({
+        type: 'warning',
+        title: 'Email Address Required!',
+        message: 'Please enter your registered staff email address.'
+      });
+      triggerShake();
+      return;
+    }
+
+    // 3. Check email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setFieldErrors({ email: true, password: false });
+      setPopup({
+        type: 'warning',
+        title: 'Invalid Email Format!',
+        message: 'Please enter a valid email address (e.g. pharmacist@medscan.ai).'
+      });
+      triggerShake();
+      return;
+    }
+
+    // 4. Check if password is empty
+    if (!trimmedPassword) {
+      setFieldErrors({ email: false, password: true });
+      setPopup({
+        type: 'warning',
+        title: 'Password Required!',
+        message: 'Please enter your account password to sign in.'
+      });
+      triggerShake();
+      return;
+    }
+
+    // Clear validation warnings
+    setFieldErrors({});
+    setPopup(null);
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(trimmedEmail, trimmedPassword);
       navigate('/dashboard');
     } catch (err) {
       console.error("Email Login Error:", err);
-      const errMsg = err.message || 'Login failed. Please check your credentials.';
-      setError(`Email Login Error: ${errMsg}`);
+      triggerShake();
+
+      const errCode = err.code || '';
+      const errMsg = err.message || '';
+
+      // Strict enforcement: Unregistered user must register first
+      if (
+        errCode === 'auth/user-not-found' ||
+        errCode === 'auth/invalid-credential' ||
+        errMsg.toLowerCase().includes('not registered') ||
+        errMsg.toLowerCase().includes('no pharmacy staff account found')
+      ) {
+        setFieldErrors({ email: true, password: true });
+        setPopup({
+          type: 'error',
+          title: 'Account Not Registered!',
+          message: 'No registered pharmacy staff account was found with this email. You cannot log in without registering first!',
+          actionText: 'Register New Account',
+          onAction: () => navigate('/register', { state: { email: trimmedEmail } })
+        });
+      } else if (errCode === 'auth/wrong-password') {
+        setFieldErrors({ email: false, password: true });
+        setPopup({
+          type: 'error',
+          title: 'Incorrect Password!',
+          message: 'The password you entered is incorrect. Please verify and try again.'
+        });
+      } else if (errCode === 'auth/too-many-requests') {
+        setPopup({
+          type: 'error',
+          title: 'Access Temporarily Suspended',
+          message: 'Too many failed login attempts. Access is temporarily restricted. Please wait a few moments before trying again.'
+        });
+      } else {
+        setPopup({
+          type: 'error',
+          title: 'Authentication Failed',
+          message: errMsg || 'Login failed. Please verify your credentials and try again.'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -35,16 +146,19 @@ const Login = () => {
 
   const handleGoogleLogin = async () => {
     try {
-      setError('');
-      setSuccessMsg('');
+      setFieldErrors({});
+      setPopup(null);
       setLoading(true);
       await loginWithGoogle();
       navigate('/dashboard');
     } catch (err) {
       console.error("Google Login Error:", err);
-      const errCode = err.code || 'unknown-error';
-      const errMsg = err.message || 'An unexpected error occurred during Google sign-in.';
-      setError(`Google Login Error: ${errCode} - ${errMsg}`);
+      triggerShake();
+      setPopup({
+        type: 'error',
+        title: 'Google Sign-In Failed',
+        message: err.message || 'An unexpected error occurred during Google sign-in.'
+      });
     } finally {
       setLoading(false);
     }
@@ -66,7 +180,8 @@ const Login = () => {
           subtitle="Verifying credentials and opening secure session..." 
           badge="Security Gateway" 
         />
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{
             width: '48px',
             height: '48px',
@@ -87,51 +202,40 @@ const Login = () => {
           </p>
         </div>
 
-        {successMsg && (
-          <div style={{
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#22c55e',
-            fontSize: '0.85rem',
-            marginBottom: '1.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <CheckCircle2 size={16} />
-            <span>{successMsg}</span>
-          </div>
+        {/* 🔔 Dynamic Popup Notification */}
+        {popup && (
+          <AuthNotification
+            type={popup.type}
+            title={popup.title}
+            message={popup.message}
+            actionText={popup.actionText}
+            onAction={popup.onAction}
+            onClose={() => setPopup(null)}
+            shake={shake}
+          />
         )}
 
-        {error && (
-          <div style={{
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--danger-glow)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            color: 'var(--danger)',
-            fontSize: '0.85rem',
-            marginBottom: '1.25rem'
-          }}>
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <div className="form-group">
             <label className="form-label">Email Address</label>
             <div style={{ position: 'relative' }}>
-              <Mail size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <Mail size={18} style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                color: fieldErrors.email ? 'var(--danger)' : 'var(--text-muted)' 
+              }} />
               <input
                 type="email"
-                className="form-input"
+                className={`form-input ${fieldErrors.email ? 'form-input-error' : ''}`}
                 placeholder="pharmacist@medscan.ai"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: false }));
+                }}
                 style={{ paddingLeft: '2.5rem' }}
-                required
               />
             </div>
           </div>
@@ -139,15 +243,23 @@ const Login = () => {
           <div className="form-group">
             <label className="form-label">Password</label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <Lock size={18} style={{ 
+                position: 'absolute', 
+                left: '12px', 
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                color: fieldErrors.password ? 'var(--danger)' : 'var(--text-muted)' 
+              }} />
               <input
                 type="password"
-                className="form-input"
+                className={`form-input ${fieldErrors.password ? 'form-input-error' : ''}`}
                 placeholder="••••••••"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: false }));
+                }}
                 style={{ paddingLeft: '2.5rem' }}
-                required
               />
             </div>
           </div>
@@ -200,8 +312,8 @@ const Login = () => {
 
         <div style={{ textAlign: 'center', marginTop: '1.75rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
           Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600' }}>
-            Register
+          <Link to="/register" style={{ color: 'var(--primary)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <UserPlus size={14} /> Register Now
           </Link>
         </div>
       </div>
