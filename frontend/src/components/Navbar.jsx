@@ -8,6 +8,21 @@ const Navbar = ({ toggleSidebar }) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
+  const cleanDisplayName = React.useMemo(() => {
+    const raw = (user?.name || localStorage.getItem('medscan_user_name') || 'Staff').trim();
+    const words = raw.split(/\s+/).filter(Boolean);
+    if (words.length >= 2 && words.length % 2 === 0) {
+      const half = words.length / 2;
+      const firstHalf = words.slice(0, half).join(' ');
+      const secondHalf = words.slice(half).join(' ');
+      if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+        return firstHalf;
+      }
+    }
+    const deduplicated = words.filter((w, i) => i === 0 || w.toLowerCase() !== words[i - 1].toLowerCase());
+    return deduplicated.join(' ') || 'Staff';
+  }, [user]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -68,10 +83,10 @@ const Navbar = ({ toggleSidebar }) => {
             color: 'white',
             fontWeight: '600'
           }}>
-            {user?.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={18} />}
+            {cleanDisplayName ? cleanDisplayName.charAt(0).toUpperCase() : <UserIcon size={18} />}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>{user?.name || 'Staff'}</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: '600' }}>{cleanDisplayName}</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>{user?.role || 'Pharmacist'}</span>
           </div>
         </div>

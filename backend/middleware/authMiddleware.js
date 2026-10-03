@@ -18,8 +18,14 @@ const verifyToken = async (req, res, next) => {
       if (isProduction) {
         return res.status(401).json({ success: false, message: 'Unauthorized: Mock tokens disabled in production' });
       }
-      const mockUid = idToken.replace('mock_token_', '');
-      decodedToken = { uid: mockUid, email: 'demo@medscan.ai', name: 'Demo Staff' };
+      const rawTokenVal = idToken.replace('mock_token_', '');
+      let tokenEmail = 'pharmacist@medscan.ai';
+      try {
+        tokenEmail = decodeURIComponent(rawTokenVal);
+      } catch (_) {
+        tokenEmail = rawTokenVal;
+      }
+      decodedToken = { uid: 'mock_' + tokenEmail, email: tokenEmail, name: 'Pharmacist' };
     } else if (firebaseInitialized) {
       try {
         decodedToken = await admin.auth().verifyIdToken(idToken);

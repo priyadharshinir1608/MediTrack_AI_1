@@ -9,9 +9,15 @@ const register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'firebaseUid, name, and email are required' });
     }
 
-    let user = await User.findOne({ firebaseUid });
+    // Check for existing user by firebaseUid OR email to prevent duplicate accounts
+    let user = await User.findOne({ $or: [{ firebaseUid }, { email }] });
     if (user) {
-      return res.status(200).json({ success: true, message: 'User already exists', user });
+      user.name = name;
+      user.firebaseUid = firebaseUid;
+      if (role) user.role = role;
+      if (phone) user.phone = phone;
+      await user.save();
+      return res.status(200).json({ success: true, message: 'User profile updated', user });
     }
 
     user = await User.create({
@@ -32,15 +38,28 @@ const register = async (req, res, next) => {
 const syncProfile = async (req, res, next) => {
   try {
     const firebaseUid = req.user.firebaseUid;
-    let user = await User.findOne({ firebaseUid });
+    const reqEmail = req.body?.email || req.user?.email;
+
+    let queryConditions = [{ firebaseUid }];
+    if (reqEmail) queryConditions.push({ email: reqEmail });
+
+    let user = await User.findOne({ $or: queryConditions });
 
     if (!user) {
       user = await User.create({
         firebaseUid,
         name: req.user.name || 'Pharmacy Staff',
-        email: req.user.email,
+        email: reqEmail || req.user.email,
         role: 'pharmacist'
       });
+    } else {
+      if (user.firebaseUid !== firebaseUid) {
+        user.firebaseUid = firebaseUid;
+      }
+      if (req.user.name && (!user.name || user.name === 'Pharmacy Staff' || user.name === 'Staff User' || user.name === 'Demo Staff')) {
+        user.name = req.user.name;
+      }
+      await user.save();
     }
 
     res.status(200).json({ success: true, user });

@@ -17,10 +17,11 @@ export const AuthProvider = ({ children }) => {
           const res = await api.get('/auth/profile');
           setUser(res.data.user);
         } catch (err) {
+          const cachedName = localStorage.getItem('medscan_user_name');
           setUser({
             firebaseUid: firebaseUser.uid,
             email: firebaseUser.email,
-            name: firebaseUser.displayName || 'Pharmacy Staff',
+            name: firebaseUser.displayName || cachedName || 'Pharmacy Staff',
             role: 'pharmacist'
           });
         }
@@ -31,10 +32,12 @@ export const AuthProvider = ({ children }) => {
             const res = await api.get('/auth/profile');
             setUser(res.data.user);
           } catch (err) {
+            const cachedName = localStorage.getItem('medscan_user_name');
+            const cachedEmail = localStorage.getItem('medscan_registered_email') || 'pharmacist@medscan.ai';
             setUser({
               firebaseUid: 'dev_user_demo',
-              email: 'demo@medscan.ai',
-              name: 'Demo Pharmacist',
+              email: cachedEmail,
+              name: cachedName || 'Pharmacy Staff',
               role: 'pharmacist'
             });
           }

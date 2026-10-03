@@ -22,6 +22,7 @@ import { Line, Pie, Bar } from 'react-chartjs-2';
 import DashboardCard from '../components/DashboardCard';
 import api from '../services/api';
 import { formatCurrency, getExpiryBadge, getStockBadge } from '../utils/helpers';
+import useAuth from '../hooks/useAuth';
 
 // Register Chart.js components
 ChartJS.register(
@@ -39,6 +40,24 @@ ChartJS.register(
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Deduplicate display name to guarantee no repeated tokens or duplicated names
+  const cleanDisplayName = useMemo(() => {
+    const raw = (user?.name || localStorage.getItem('medscan_user_name') || 'Pharmacist').trim();
+    const words = raw.split(/\s+/).filter(Boolean);
+    if (words.length >= 2 && words.length % 2 === 0) {
+      const half = words.length / 2;
+      const firstHalf = words.slice(0, half).join(' ');
+      const secondHalf = words.slice(half).join(' ');
+      if (firstHalf.toLowerCase() === secondHalf.toLowerCase()) {
+        return firstHalf;
+      }
+    }
+    const deduplicated = words.filter((w, i) => i === 0 || w.toLowerCase() !== words[i - 1].toLowerCase());
+    return deduplicated.join(' ') || 'Pharmacist';
+  }, [user]);
+
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'alerts' | 'ai'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -331,24 +350,29 @@ const Dashboard = () => {
       
       {/* 🚀 Top Header Section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-          <h1 style={{ fontSize: '1.85rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
-            Pharmacy Intelligence Command Center
-          </h1>
-          <span style={{ 
-            display: 'inline-flex', 
-            alignItems: 'center', 
-            gap: '0.35rem', 
-            padding: '0.2rem 0.65rem', 
-            borderRadius: '9999px', 
-            background: 'rgba(34, 197, 94, 0.15)', 
-            color: '#22c55e', 
-            fontSize: '0.75rem', 
-            fontWeight: '600' 
-          }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }}></span>
-            Live Synced
-          </span>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <h1 style={{ fontSize: '1.85rem', fontWeight: '800', letterSpacing: '-0.02em' }}>
+              Pharmacy Intelligence Command Center
+            </h1>
+            <span style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '0.35rem', 
+              padding: '0.2rem 0.65rem', 
+              borderRadius: '9999px', 
+              background: 'rgba(34, 197, 94, 0.15)', 
+              color: '#22c55e', 
+              fontSize: '0.75rem', 
+              fontWeight: '600' 
+            }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e', animation: 'pulse 2s infinite' }}></span>
+              Live Synced
+            </span>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.35rem', marginBottom: 0 }}>
+            Welcome back, <strong style={{ color: '#38bdf8', fontWeight: '700' }}>{cleanDisplayName}</strong> • Real-time clinical inventory & sales telemetry
+          </p>
         </div>
       </div>
 
