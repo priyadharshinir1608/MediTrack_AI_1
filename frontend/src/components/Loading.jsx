@@ -7,7 +7,7 @@ const Loading = ({
   size = 'medium', // 'small' | 'medium' | 'large'
   variant = 'default', // 'default' | 'card' | 'fullscreen'
   showDots = true,
-  icon: IconComponent = Activity
+  icon: IconComponent = Pill
 }) => {
   // Dimensions mapping based on size
   const dimensions = {

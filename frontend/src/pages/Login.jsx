@@ -170,9 +170,10 @@ const Login = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'white',
-                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)'
+                boxShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
+                overflow: 'hidden'
               }}>
-                <Sparkles size={22} />
+                <img src="/src/assets/images/pill_logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>

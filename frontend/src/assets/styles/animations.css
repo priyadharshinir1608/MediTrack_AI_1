@@ -8,6 +8,11 @@
   50% { opacity: 1; transform: scale(1.05); }
 }
 
+@keyframes pulseTextGlow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.4)); }
+  50% { filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.8)); }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

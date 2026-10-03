@@ -133,24 +133,26 @@ const Landing = () => {
           transform: 'translateX(-50%)',
           width: '500px',
           height: '500px',
-          background: 'radial-gradient(circle, rgba(59, 130, 246, 0.25) 0%, transparent 65%)',
+          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 65%)',
           filter: 'blur(70px)',
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          animation: 'pulseGlow 4s ease-in-out infinite alternate'
         }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', zIndex: 2 }}>
           <div style={{
             width: '54px',
             height: '54px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            background: 'linear-gradient(135deg, #06b6d4, #10b981)',
             borderRadius: '14px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            boxShadow: '0 0 25px rgba(59, 130, 246, 0.5)'
+            boxShadow: '0 0 25px rgba(16, 185, 129, 0.5)',
+            overflow: 'hidden'
           }}>
-            <Sparkles size={28} />
+            <img src="/src/assets/images/pill_logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.35rem' }}>
             <span style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '-0.02em', color: '#fff' }}>MediTrack</span>
@@ -176,7 +178,7 @@ const Landing = () => {
             size="large" 
             message="MediTrack AI Neural Engine" 
             subtext={bootStatusText} 
-            icon={Sparkles} 
+            icon={Pill} 
           />
         </div>
 
@@ -223,7 +225,7 @@ const Landing = () => {
           size="large" 
           message="Entering MediTrack AI Command Center" 
           subtext="Mounting live inventory telemetry, Scikit-Learn forecasts & POS billing..." 
-          icon={Activity} 
+          icon={Pill} 
         />
       </div>
     );
@@ -234,6 +236,10 @@ const Landing = () => {
     <div className="fade-in" style={{
       minHeight: '100vh',
       backgroundColor: '#0a0f1d',
+      backgroundImage: `url('/src/assets/images/medicine_bg.png')`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
       color: '#f8fafc',
       overflowX: 'hidden',
       position: 'relative',
@@ -248,10 +254,11 @@ const Landing = () => {
         transform: 'translateX(-50%)',
         width: '900px',
         height: '550px',
-        background: 'radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, rgba(139, 92, 246, 0.12) 40%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, rgba(6, 182, 212, 0.15) 40%, transparent 70%)',
         filter: 'blur(80px)',
         pointerEvents: 'none',
-        zIndex: 0
+        zIndex: 0,
+        animation: 'pulseGlow 6s ease-in-out infinite alternate'
       }} />
 
       <div style={{
@@ -260,10 +267,11 @@ const Landing = () => {
         right: '-100px',
         width: '500px',
         height: '500px',
-        background: 'radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 60%)',
+        background: 'radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 60%)',
         filter: 'blur(90px)',
         pointerEvents: 'none',
-        zIndex: 0
+        zIndex: 0,
+        animation: 'pulseGlow 5s ease-in-out infinite alternate-reverse'
       }} />
 
       {/* ======================================================== */}
@@ -291,15 +299,16 @@ const Landing = () => {
           <div style={{
             width: '38px',
             height: '38px',
-            background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+            background: 'linear-gradient(135deg, #06b6d4, #10b981)',
             borderRadius: '10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: 'white',
-            boxShadow: '0 0 16px rgba(59, 130, 246, 0.4)'
+            boxShadow: '0 0 20px rgba(16, 185, 129, 0.5)',
+            overflow: 'hidden'
           }}>
-            <Sparkles size={20} />
+            <img src="/src/assets/images/pill_logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
@@ -433,10 +442,11 @@ const Landing = () => {
         }}>
           Intelligent Pharmacy Automation From{' '}
           <span style={{
-            background: 'linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #34d399 100%)',
+            background: 'linear-gradient(135deg, #38bdf8 0%, #06b6d4 50%, #10b981 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
-            display: 'inline-block'
+            display: 'inline-block',
+            animation: 'pulseTextGlow 4s ease-in-out infinite alternate'
           }}>
             AI Vision OCR to POS Invoicing
           </span>
@@ -557,17 +567,19 @@ const Landing = () => {
             textAlign: 'left',
             position: 'relative',
             cursor: 'pointer',
-            border: '1px solid rgba(59, 130, 246, 0.35)',
-            boxShadow: '0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 35px rgba(59, 130, 246, 0.25)',
-            transition: 'transform 0.3s ease, border-color 0.3s ease'
+            border: '1px solid rgba(16, 185, 129, 0.35)',
+            boxShadow: '0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.25)',
+            transition: 'transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.6)';
+            e.currentTarget.style.borderColor = 'rgba(6, 182, 212, 0.6)';
+            e.currentTarget.style.boxShadow = '0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 45px rgba(6, 182, 212, 0.4)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+            e.currentTarget.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+            e.currentTarget.style.boxShadow = '0 20px 60px -10px rgba(0, 0, 0, 0.7), 0 0 35px rgba(16, 185, 129, 0.25)';
           }}
         >
           {/* Top Window Bar */}
