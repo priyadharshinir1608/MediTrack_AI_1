@@ -1,6 +1,6 @@
-# MedScan AI — Full-Stack Pharmacy Management System
+# MediTrack AI — Full-Stack Pharmacy Management System
 
-MedScan AI is a modular, AI-powered pharmacy and medicine inventory management platform designed for modern healthcare facilities.
+MediTrack AI is a modular, AI-powered pharmacy and medicine inventory management platform designed for modern healthcare facilities.
 
 ## Architecture
 
@@ -44,3 +44,23 @@ cd frontend
 npm install
 npm run dev
 ```
+============================================================================
+============================================================================
+
+##backend
+
+$env:Path = "C:\Program Files\nodejs;$env:Path"
+cd "D:\MediTrack AI\backend"
+npm run dev
+
+##frontend
+
+$env:Path = "C:\Program Files\nodejs;$env:Path"
+cd "D:\MediTrack AI\frontend"
+npm run dev
+
+##Ai-service
+
+& "C:\Program Files\Python314\python.exe"
+cd "D:\MediTrack AI\ai-service"
+python app.py
